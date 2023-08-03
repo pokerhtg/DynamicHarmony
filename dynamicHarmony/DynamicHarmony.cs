@@ -5,12 +5,12 @@ using System;
 using System.Collections.Generic;
 using Mohawk.SystemCore;
 using TenCrowns.GameCore.Text;
-using UnityEngine;
+using TenCrowns.ClientCore;
 
 /// TODO priority
 /// charge  3
 /// evade 2
-/// kite 1
+
 
 namespace dynamicHarmony
 {
@@ -34,14 +34,20 @@ namespace dynamicHarmony
         //decoding special effects from aiAttackValue's MOVE_SPECIAL
         static readonly int isSkirmisher = -1;
         static readonly int isKite = -2;
-            
-            
+
+
         [HarmonyPatch(typeof(Unit))]
         public class PatchUnitBehaviors
         {
             static EffectUnitType specialEffect = EffectUnitType.NONE;
-
-            private static int getSpecialMove(ReadOnlyList<EffectUnitType> effectUnitTypes, Infos info, out EffectUnitType eff)
+            /// <summary>
+            /// main utility method identifying the type of special movement rules, if any
+            /// </summary>
+            /// <param name="effectUnitTypes"></param>
+            /// <param name="info"></param>
+            /// <param name="eff"></param>
+            /// <returns> int code of the MOVE_SPECIAL </returns>
+            public static int getSpecialMove(ReadOnlyList<EffectUnitType> effectUnitTypes, Infos info, out EffectUnitType eff)
             {
                 int index = -1;
                 eff = specialEffect;
@@ -64,11 +70,12 @@ namespace dynamicHarmony
                     }
                 return 0;
             }
-            
-            
+
+
 
             [HarmonyPatch(nameof(Unit.attackEffectPreview))]
             ///define special effects to display when this unit is attacked
+            ///For Kite and Skirmish
             static bool Prefix(ref TextBuilder __result, ref Unit __instance, TextBuilder builder, Unit pFromUnit, Tile pFromTile)
             {
                 var pToTile = __instance.tile();
@@ -106,6 +113,7 @@ namespace dynamicHarmony
             }
 
             [HarmonyPatch(nameof(Unit.hasPush))]
+            ///for skirmish, which is treated as if the attacker has Push
             static void Postfix(ref bool __result, ref Unit __instance, Tile pToTile)
             {
                 if (__result)
@@ -131,6 +139,7 @@ namespace dynamicHarmony
             }
 
             [HarmonyPatch(nameof(Unit.attackDamagePreview))]
+            ///for friendly fire
             static void Postfix(ref int __result, Unit __instance, Unit pFromUnit, Tile pMouseoverTile, bool bCheckHostile)
             {
                 if (!bCheckHostile)
@@ -168,7 +177,31 @@ namespace dynamicHarmony
                     }
                 }
             }
+
+
+            [HarmonyPatch(nameof(Unit.canAct), new Type[] { typeof(Player), typeof(int), typeof(bool), typeof(bool) })]
+            // canAct(Player pActingPlayer, int iCost = 1, bool bRout = false, bool bCancelImprovement = false)
+            ///for Kite
+            static bool Prefix(ref Unit __instance, ref bool __result, Player pActingPlayer, int iCost = 1, bool bRout = false, bool bCancelImprovement = false)
+            {
+              //  MohawkAssert.Assert(false, "canAct is called ");
+                if (__instance.getCooldown() != __instance.game().infos().Globals.ATTACK_COOLDOWN) //if didn't attack, normal
+             //   { MohawkAssert.Assert(false, "hatch 1 ");
+                    return true; 
+                if (getSpecialMove(__instance.getEffectUnits(), __instance.game().infos(), out _) != isKite) //if not kite, normal. //may want to catch the out and display text
+                {
+             //       MohawkAssert.Assert(false, "hatch 2 ");
+                    return true; }
+                if (__instance.getTurnSteps() > 0) //moved; normal
+                {
+            //        MohawkAssert.Assert(false, "hatch 3 ");
+                    return true; }
+                __result = true; //can move....once.....hmmmm
+                return false;
+            }
+
             [HarmonyPatch(nameof(Unit.attackUnitOrCity), new Type[] { typeof(Tile), typeof(Player) })]
+            ///for Kite and friendly fire; defines what can be attacked, and what effect pop up texts to display
             static void Prefix(ref Unit __instance, Tile pToTile, Player pActingPlayer)
             {
                 Tile pFromTile = __instance.tile();
@@ -176,6 +209,13 @@ namespace dynamicHarmony
                 List<int> aiAdditionalDefendingUnits = new List<int>();
                 List<Unit.AttackOutcome> outcomes = new List<Unit.AttackOutcome>();
                 int cityHP = -1;
+
+                if (isKite == getSpecialMove(__instance.getEffectUnits(), __instance.game().infos(), out EffectUnitType eff))
+                {
+                    __instance.game().addTileTextAllPlayers(ref azTileTexts, pFromTile.getID(), () => "kite");
+                }
+                //  
+
                 for (AttackType eLoopAttack = 0; eLoopAttack < __instance.game().infos().attacksNum(); eLoopAttack++)
                 {
                     int iValue = __instance.attackValue(eLoopAttack);
@@ -213,12 +253,9 @@ namespace dynamicHarmony
                                 __instance.game().addTileTextAllPlayers(ref azTileTexts, pLoopTile.getID(), () => "-" + dmg + " HP");
                                 outcomes.Add(pLoopDefendingUnit.getHP() == 0 ? Unit.AttackOutcome.KILL : Unit.AttackOutcome.NORMAL);
 
-                            }
-                                
+                             }
                         }
                     }
-
-                    
                 }
                 if (azTileTexts != null)
                 {
@@ -226,17 +263,16 @@ namespace dynamicHarmony
                     __instance.game().sendUnitBattleAction(__instance, null, pFromTile, pToTile, pToTile, Unit.AttackOutcome.NORMAL, azTileTexts, pActingPlayer?.getPlayer() ?? PlayerType.NONE, cityHP > 0, cityHP, aiAdditionalDefendingUnits, outcomes);
                 }
             }
-
-
-            
         }
 
         [HarmonyPatch(typeof(Infos))]
         public class PatchInfos
         {
             [HarmonyPatch(nameof(Infos.effectUnit))]
+            ///for skirmisher; a bit hacky
             static bool Prefix(ref InfoEffectUnit __result, ref List<InfoEffectUnit> ___maEffectUnits, ref EffectUnitType eIndex)
             {
+                //NOTE this is used when looking for an effect to explain hasPush but none was found; we can explain it on Skirmisher. This method could have side effects
                 if (eIndex < 0)
                     foreach (var effect in ___maEffectUnits)
                     {
@@ -254,6 +290,7 @@ namespace dynamicHarmony
         public class PatchHelpText
         {
             [HarmonyPatch(nameof(HelpText.buildAttackLinkVariable))]
+            ///for disabling unnecessary help text for all special effects
             static bool Prefix(AttackType eAttack, HelpText __instance)
             {
                 using (new UnityProfileScope("HelpText.buildAttackLinkVariable"))
@@ -262,7 +299,7 @@ namespace dynamicHarmony
 
                     if (infoAttack.mePattern == AttackPatternType.NONE)
                     {
-                        // __result = ? nuffin?
+                        // __result is nada
                         return false;
                     }
                 }
@@ -270,6 +307,7 @@ namespace dynamicHarmony
             }
 
             [HarmonyPatch(nameof(HelpText.buildEffectUnitHelp))]
+            ///for displaying all custom special effects 
             static void Prefix(TextBuilder builder, EffectUnitType eEffectUnit, HelpText __instance)
             {
 
@@ -282,12 +320,43 @@ namespace dynamicHarmony
                     {
                         builder.AddTEXT("TEXT_HELP_RETREAT_SHORT");
                     }
+                    else if (iValue == isKite)
+                    {
+                        builder.AddTEXT("TEXT_HELP_KITE_SHORT");
+                    }
                 }
                 catch (Exception e)
                 {
                     MohawkAssert.Assert(false, "Move Special not found; mod failed to unload? " + e.Message);
-                    harmony.UnpatchAll(MY_HARMONY_ID);
+                    // harmony.UnpatchAll(MY_HARMONY_ID);
                 }
+            }
+        }
+
+        [HarmonyPatch(typeof(ClientInput))]
+        public class PatchClient
+        {
+            [HarmonyPatch(nameof(ClientInput.moveTo))]
+            // public virtual void moveTo(Unit pUnit, Tile pTile)
+            ///outside of gamecore, so be very careful here. Client level game logic control in base game...tsk tsk. Changing it to make Kiting work
+            static bool Prefix(ref IApplication ___APP, Unit pUnit, Tile pTile)
+            {
+                ClientManager ClientMgr = ___APP.GetClientManager();
+                if (pUnit.getCooldown() != ClientMgr?.Infos.Globals.ATTACK_COOLDOWN)
+                    return true;
+            
+                if (PatchUnitBehaviors.getSpecialMove(pUnit.getEffectUnits(), ClientMgr?.Infos, out _) != isKite) //if not kite, normal.
+                {
+                    return true; 
+                }
+                if (pUnit.getTurnSteps() > 0) //moved; normal
+                {
+                    return true; 
+                }
+               
+                ClientMgr.sendMoveUnit(pUnit, pTile, false, false, ClientMgr.Selection.getSelectedUnitWaypoint());
+                ClientMgr.Selection.setSelectedUnitWaypoint(null);
+                return false;
             }
         }
     }
