@@ -20,8 +20,19 @@ namespace DynamicUnits
                     h.mbImpassable = false; 
                 }
             }
-
            base.postStart();
+        }
+        public override bool initFromMapScript(GameParameters pGameParams, MapBuilder pMapBuilder)
+        {
+            foreach (InfoHeight h in infos().heights())
+            {
+                if (!h.mbImpassable && h.miMovementCost > 15)
+                {
+                    //if your movement cost is high, treat it like inpassable for map gen
+                    h.mbImpassable = true;
+                }
+            }
+            return base.initFromMapScript(pGameParams, pMapBuilder);
         }
 
         public override int getTeamWarScore(TeamType eIndex1, TeamType eIndex2)

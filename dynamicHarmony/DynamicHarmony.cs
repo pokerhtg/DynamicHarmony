@@ -91,7 +91,7 @@ namespace dynamicHarmony
                     if (__instance.attackDamagePreview(pFromUnit, pFromTile, pFromUnit.player()) >= __instance.getHP()) //dead
                         return true; //not special
 
-                    if (pFromUnit.canAttackUnitOrCity(pFromTile, pToTile, null) && pToTile.isTileAdjacent(pFromTile)) //skirmish condition: adj and getting hit
+                    if (pFromUnit.canAttackUnitOrCity(pFromTile, pToTile, null) && pToTile.isTileAdjacent(pFromTile) && (pToTile.improvement()?.miDefenseModifier ?? 0 )< 1) //skirmish condition: adj and getting hit
                     {
                         var txt2 = g.HelpText.getGenderedEffectUnitName(g.infos().effectUnit(defenderEffect), pFromUnit.getGender());
                         builder.AddTEXT(txt2);
@@ -116,12 +116,15 @@ namespace dynamicHarmony
             ///for skirmish, which is treated as if the attacker has Push
             static void Postfix(ref bool __result, ref Unit __instance, Tile pToTile)
             {
+           //     MohawkAssert.Assert(false, "entering haspush");
                 if (__result)
                     return;
 
                 if (!pToTile.isTileAdjacent(__instance.tile()))
                     return; //false
-
+                if ((pToTile.improvement()?.miDefenseModifier??0) > 0) //can't push off defensive structures
+                    return;
+                
                 using (var unitListScoped = CollectionCache.GetListScoped<int>())
                 {
                     pToTile.getAliveUnits(unitListScoped.Value);
@@ -133,8 +136,10 @@ namespace dynamicHarmony
                         {
                             return; //false
                         }
+                        
                     }
                 }
+          //      MohawkAssert.Assert(false, "hasPush does things");
                 __result = true; //if all units in the target tile are retreating, hasPush = true;
             }
 
@@ -184,7 +189,7 @@ namespace dynamicHarmony
             ///for Kite
             static bool Prefix(ref Unit __instance, ref bool __result, Player pActingPlayer, int iCost = 1, bool bRout = false, bool bCancelImprovement = false)
             {
-              //  MohawkAssert.Assert(false, "canAct is called ");
+                
                 if (__instance.getCooldown() != __instance.game().infos().Globals.ATTACK_COOLDOWN) //if didn't attack, normal
              //   { MohawkAssert.Assert(false, "hatch 1 ");
                     return true; 
