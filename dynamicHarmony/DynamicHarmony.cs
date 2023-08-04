@@ -151,6 +151,8 @@ namespace dynamicHarmony
                     return;
                 if (pFromUnit == null)
                     return;
+                if (!pMouseoverTile.hasHostileUnit(__instance.getTeam()))
+                    return;
                 for (AttackType eLoopAttack = 0; eLoopAttack < __instance.game().infos().attacksNum(); eLoopAttack++)
                 {
                     int iValue = pFromUnit.attackValue(eLoopAttack);
@@ -268,6 +270,56 @@ namespace dynamicHarmony
                     __instance.game().sendUnitBattleAction(__instance, null, pFromTile, pToTile, pToTile, Unit.AttackOutcome.NORMAL, azTileTexts, pActingPlayer?.getPlayer() ?? PlayerType.NONE, cityHP > 0, cityHP, aiAdditionalDefendingUnits, outcomes);
                 }
             }
+        }
+
+        [HarmonyPatch(typeof(Unit.UnitAI))]
+        public class PatchAI
+         {
+            [HarmonyPatch(nameof(Unit.UnitAI.attackValue))]
+            //public virtual int attackValue(Tile pFromTile, Tile pTargetTile, bool bCheckOtherUnits, int iExtraModifier, out bool bCivilian, out int iPushTileID, out bool bStun)
+            static void Postfix(ref int __result, ref Unit ___unit, Tile pFromTile, Tile pTargetTile)
+            {
+                if (__result == 0) //not a target. Shortcircuit
+                    return;
+                ///value for target already calculated; just need to reduce it by friendly fire amount. 
+
+                for (AttackType eLoopAttack = 0; eLoopAttack < ___unit.game().infos().attacksNum(); eLoopAttack++)
+                {
+                    int iAttackValue = ___unit.attackValue(eLoopAttack);
+                    if (iAttackValue < 1)
+                        continue;
+                    int iAttackPercent = ___unit.attackPercent(eLoopAttack);
+                    if (iAttackPercent < 1)
+                        continue;
+
+                    using (var tilesScoped = CollectionCache.GetListScoped<int>())
+                    {
+                        pFromTile.getAttackTiles(tilesScoped.Value, pTargetTile, ___unit.getType(), eLoopAttack, iAttackValue);
+
+                        foreach (int iAttackTile in tilesScoped.Value)
+                        {
+                            Tile pAttackTile = ___unit.game().tile(iAttackTile);
+
+                            if (!___unit.canTargetTile(pFromTile, pAttackTile)) //if this unit canNOT be targeted, then it's friendly or neutral
+                            {
+                                Unit pUnit = pAttackTile.defendingUnit();
+                                if (pUnit != null)
+                                {
+                                    int iDamage = ___unit.attackUnitDamage(pFromTile, pUnit, false, iAttackPercent, -1, false);
+                                    if ( ___unit.game().areTeamsAllied(pUnit.getTeam(), ___unit.getTeam())) //friendly!
+                                    {
+                                        __result -= 150 * iDamage; //100% is default; we treat our soldiers' lives slightly above average
+                                    }
+                                    else
+                                        __result = 50 * iDamage; //slight preference for causing collateral damage
+                                }
+                            }
+                        }
+                    } 
+                }
+                __result = Math.Max(0, __result); //negative should be handled same as zero...but just in case. zero means not a valid target (which is a stronger rejection than base method's floor of 1).
+            }
+
         }
 
         [HarmonyPatch(typeof(Infos))]
