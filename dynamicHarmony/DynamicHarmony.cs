@@ -150,7 +150,7 @@ namespace dynamicHarmony
                     return;
                 if (pFromUnit == null)
                     return;
-                if (!pMouseoverTile.hasHostileUnit(__instance.getTeam()))
+                if (!pMouseoverTile.hasHostileUnit(pFromUnit.getTeam()))
                     return;
                 for (AttackType eLoopAttack = 0; eLoopAttack < __instance.game().infos().attacksNum(); eLoopAttack++)
                 {
@@ -463,8 +463,6 @@ namespace dynamicHarmony
                                // MohawkAssert.Assert(false, "doing it? " + ClientMgr.GameClient.tile(iLoopTile) + " is not " + city.tile());
                                 if (ClientMgr.GameClient.tile(iLoopTile) == city.tile())
                                 {
-                                    MohawkAssert.Assert(false, "doing it! ");
-                                   
                                     ___msiAffectedCities.Add(city.getID());
                                     int iDamagePreviewHP = pFromUnit.attackCityDamage(pFromUnit.tile(), city, pFromUnit.attackPercent(eLoopAttack));
                                     UIAttributeTag widget = getCityWidgetTag(__instance, city.getID());

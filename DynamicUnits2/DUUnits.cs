@@ -124,6 +124,27 @@ namespace DynamicUnits
 
             return iValue;
         }
+
+        /// give some bonus xp before actually attacking; COMBAT_BASE_XP is expected to be drastically lowered--xp based on damage done, not kills
+        protected override int attackTile(Tile pFromTile, Tile pToTile, bool bTargetTile, int iAttackPercent, ref List<TileText> azTileTexts, out AttackOutcome eOutcome, ref bool bEvent)
+        {
+            if (canDamageCity(pToTile))
+                doXP(attackCityDamage(pFromTile, pToTile.city(), iAttackPercent), ref azTileTexts);
+            Unit pDefendingUnit = pToTile.defendingUnit();
+            if (pDefendingUnit != null && canDamageUnit(pDefendingUnit))
+            {
+                int damageEstimate = attackUnitDamage(pFromTile, pDefendingUnit, false); //no crit, but also unlimited by actual remaining HP
+                doXP(damageEstimate < pDefendingUnit.getHP()? damageEstimate: pDefendingUnit.getHPMax(), ref azTileTexts);
+            }
+            return base.attackTile(pFromTile, pToTile, bTargetTile, iAttackPercent, ref azTileTexts, out eOutcome, ref bEvent);
+        }
+
+        //ignore tiny xp gains; reduce text notification noises
+        protected override void doXP(int iKills, ref List<TileText> azTileTexts)
+        {
+            if (iKills > 1)
+                base.doXP(iKills, ref azTileTexts);
+        }
         public override int attackUnitDamage(Tile pFromTile, Unit pToUnit, bool bCritical, int iPercent = 100, int iExistingDamage = -1, bool bCheckOurUnits = true, int iExtraModifier = 0)
         {
             Tile pToTile = pToUnit.tile();
