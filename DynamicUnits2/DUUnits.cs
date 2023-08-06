@@ -128,22 +128,42 @@ namespace DynamicUnits
         /// give some bonus xp before actually attacking; COMBAT_BASE_XP is expected to be drastically lowered--xp based on damage done, not kills
         protected override int attackTile(Tile pFromTile, Tile pToTile, bool bTargetTile, int iAttackPercent, ref List<TileText> azTileTexts, out AttackOutcome eOutcome, ref bool bEvent)
         {
+            int xp = 0;
             if (canDamageCity(pToTile))
-                doXP(attackCityDamage(pFromTile, pToTile.city(), iAttackPercent), ref azTileTexts);
+                xp = attackCityDamage(pFromTile, pToTile.city(), iAttackPercent);
             Unit pDefendingUnit = pToTile.defendingUnit();
             if (pDefendingUnit != null && canDamageUnit(pDefendingUnit))
             {
-                int damageEstimate = attackUnitDamage(pFromTile, pDefendingUnit, false); //no crit, but also unlimited by actual remaining HP
-                doXP(damageEstimate < pDefendingUnit.getHP()? damageEstimate: pDefendingUnit.getHPMax(), ref azTileTexts);
+                int estimate = attackUnitDamage(pFromTile, pDefendingUnit, false, iAttackPercent); //no crit, but also unlimited by actual remaining HP
+                if (game().isHostileUnit(getTeam(), TribeType.NONE, pDefendingUnit))
+                {
+                    xp += estimate < pDefendingUnit.getHP() ? estimate : pDefendingUnit.getHPMax(); //either gain xp based on estimate, or a bit more for kill bonus
+                }
+                /*else if (game().areTeamsAllied(getTeam(), pDefendingUnit.getTeam()))
+                {
+                     xp -= estimate * 2;
+                }*/
+                if (iAttackPercent == 100)
+                { //main attack, not a AoE
+                    xp += info().mbMelee ? pDefendingUnit.modifiedStrength() / 10 : infos().Globals.BASE_DAMAGE;
+                }
+                else
+                {
+                    xp *= 150;
+                    xp /= 100;
+                }
+               
+              
             }
+            doXP(xp, ref azTileTexts);
             return base.attackTile(pFromTile, pToTile, bTargetTile, iAttackPercent, ref azTileTexts, out eOutcome, ref bEvent);
         }
 
         //ignore tiny xp gains; reduce text notification noises
-        protected override void doXP(int iKills, ref List<TileText> azTileTexts)
+        protected override void doXP(int multiplier, ref List<TileText> azTileTexts)
         {
-            if (iKills > 1)
-                base.doXP(iKills, ref azTileTexts);
+            if (multiplier > infos().Globals.BASE_DAMAGE/2) 
+                base.doXP(multiplier, ref azTileTexts);
         }
         public override int attackUnitDamage(Tile pFromTile, Unit pToUnit, bool bCritical, int iPercent = 100, int iExistingDamage = -1, bool bCheckOurUnits = true, int iExtraModifier = 0)
         {

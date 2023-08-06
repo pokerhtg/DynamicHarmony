@@ -76,7 +76,7 @@ namespace dynamicHarmony
             [HarmonyPatch(nameof(Unit.attackEffectPreview))]
             ///define special effects to display when this unit is attacked
             ///For Kite and Skirmish
-            static bool Prefix(ref TextBuilder __result, ref Unit __instance, TextBuilder builder, ref Unit pFromUnit, Tile pFromTile)
+            static bool Prefix(ref TextBuilder __result, ref Unit __instance, ref TextBuilder builder, ref Unit pFromUnit, Tile pFromTile)
             {
                 var pToTile = __instance.tile();
                 var g = __instance.game();
@@ -91,12 +91,15 @@ namespace dynamicHarmony
                     if (__instance.attackDamagePreview(pFromUnit, pFromTile, pFromUnit.player()) >= __instance.getHP()) //dead
                         return true; //not special
 
-                    if (pFromUnit.canAttackUnitOrCity(pFromTile, pToTile, null) && pFromUnit.info().mbMelee && !pToTile.hasCity() && (pToTile.improvement()?.miDefenseModifier ?? 0 )< 1) //skirmish condition: adj and getting hit
+                    if (pFromUnit.canAttackUnitOrCity(pFromTile, pToTile, null) && pFromUnit.info().mbMelee && !pToTile.hasCity() && (pToTile.improvement()?.miDefenseModifier ?? 0 )< 1) //skirmish condition: melee and getting hit
                     {
-                        var txt2 = g.HelpText.getGenderedEffectUnitName(g.infos().effectUnit(defenderEffect), pFromUnit.getGender());
-                        builder.AddTEXT(txt2);
+                        //Special!
+                        if (pFromUnit.getPushTile(__instance,pFromTile,pToTile) == null)
+                            builder.AddTEXT("TEXT_CONCEPT_STUN");
+                        else 
+                            builder.AddTEXT(g.HelpText.getGenderedEffectUnitName(g.infos().effectUnit(defenderEffect), pFromUnit.getGender()));
                         __result = builder;
-                        special = true; //Special!
+                        special = true; 
                     }
                 }
                 if (bKite)
@@ -197,12 +200,13 @@ namespace dynamicHarmony
                     return true; 
                 if (getSpecialMove(__instance.getEffectUnits(), __instance.game().infos(), out _) != isKite) //if not kite, normal. //may want to catch the out and display text
                 {
-             //       MohawkAssert.Assert(false, "hatch 2 ");
-                    return true; }
+                  return true; 
+                }
                 if (__instance.getTurnSteps() > 0) //moved; normal
                 {
-            //        MohawkAssert.Assert(false, "hatch 3 ");
-                    return true; }
+                    return true; 
+                }
+
                 __result = true; //can move....once.....hmmmm
                 return false;
             }
@@ -212,13 +216,13 @@ namespace dynamicHarmony
             static void Prefix(ref Unit __instance, Tile pToTile, Player pActingPlayer)
             {
                 Tile pFromTile = __instance.tile();
-                List<TileText> azTileTexts = null;
+                List<TileText> azTileTexts = new List<TileText>();
                 List<int> aiAdditionalDefendingUnits = new List<int>();
                 List<Unit.AttackOutcome> outcomes = new List<Unit.AttackOutcome>();
                 int cityHP = -1;
 
                 Infos info = __instance.game().infos();
-                if (isKite == getSpecialMove(__instance.getEffectUnits(), info, out EffectUnitType eff))
+                if (isKite == getSpecialMove(__instance.getEffectUnits(), info, out _) && __instance.getTurnSteps() == 0)
                 {
                     __instance.game().addTileTextAllPlayers(ref azTileTexts, pFromTile.getID(), () => "kite");
                 }
@@ -270,7 +274,7 @@ namespace dynamicHarmony
                         }
                     }
                 }
-                if (azTileTexts != null)
+                if (azTileTexts.Count != 0)
                 {
                     //   MohawkAssert.Assert(false, "got text" + azTileTexts.Last());
                     __instance.game().sendUnitBattleAction(__instance, null, pFromTile, pToTile, pToTile, Unit.AttackOutcome.NORMAL, azTileTexts, pActingPlayer?.getPlayer() ?? PlayerType.NONE, cityHP > 0, cityHP, aiAdditionalDefendingUnits, outcomes);
@@ -280,17 +284,20 @@ namespace dynamicHarmony
 
         [HarmonyPatch(typeof(Unit.UnitAI))]
         public class PatchAI
-         {
+        {
             [HarmonyPatch(nameof(Unit.UnitAI.attackValue))]
             //public virtual int attackValue(Tile pFromTile, Tile pTargetTile, bool bCheckOtherUnits, int iExtraModifier, out bool bCivilian, out int iPushTileID, out bool bStun)
+            //this is a targetting algo; modify to factoring friendly fire
             static void Postfix(ref int __result, ref Unit ___unit, Tile pFromTile, Tile pTargetTile)
             {
                 if (__result == 0) //not a target. Shortcircuit
                     return;
+
                 //factor in some more counterattack avoidance
                 __result -= 50 * ___unit.getCounterAttackDamage(pTargetTile.defendingUnit(), pTargetTile);
 
-                for (AttackType eLoopAttack = 0; eLoopAttack < ___unit.game().infos().attacksNum(); eLoopAttack++)
+                Game g = ___unit.game();
+                for (AttackType eLoopAttack = 0; eLoopAttack < g.infos().attacksNum(); eLoopAttack++)
                 {
                     int iAttackValue = ___unit.attackValue(eLoopAttack);
                     if (iAttackValue < 1)
@@ -299,35 +306,74 @@ namespace dynamicHarmony
                     if (iAttackPercent < 1)
                         continue;
                    
-                using (var tilesScoped = CollectionCache.GetListScoped<int>())
+                    using (var tilesScoped = CollectionCache.GetListScoped<int>())
                     {
                         pFromTile.getAttackTiles(tilesScoped.Value, pTargetTile, ___unit.getType(), eLoopAttack, iAttackValue);
 
                         foreach (int iAttackTile in tilesScoped.Value)
                         {
-                            Tile pAttackTile = ___unit.game().tile(iAttackTile);
-
-                            if (!___unit.canTargetTile(pFromTile, pAttackTile)) //if this unit canNOT be targeted, then it's friendly or neutral
+                            
+                            Tile pAttackTile = g.tile(iAttackTile);
+                            
+                            Unit pUnit = pAttackTile.defendingUnit();
+                            if (pUnit != null)
                             {
-                                Unit pUnit = pAttackTile.defendingUnit();
-                                if (pUnit != null)
+                                if (g.isHostileUnitUnit(___unit, pUnit)) //if hostile, original method handles it
+                                    continue;
+                                int iDamage = ___unit.attackUnitDamage(pFromTile, pUnit, false, iAttackPercent, -1, false);
+                                if (g.areTeamsAllied(pUnit.getTeam(), ___unit.getTeam()) || pUnit.getTeam() == ___unit.getTeam()) //friendly!
                                 {
-                                    int iDamage = ___unit.attackUnitDamage(pFromTile, pUnit, false, iAttackPercent, -1, false);
-                                    if ( ___unit.game().areTeamsAllied(pUnit.getTeam(), ___unit.getTeam())) //friendly!
-                                    {
-                                        __result -= 150 * iDamage; //100% is default; we treat our soldiers' lives slightly above average
-                                    }
-                                    else
-                                        __result = 50 * iDamage; //slight preference for causing collateral damage
+                                    __result -= 150 * iDamage; //100% is default; we treat our soldiers' lives slightly above average
+               
                                 }
-                            }
+                                else
+                                    __result = 50 * iDamage; //slight preference for causing collateral damage
+                            }                 
                         }
                     } 
                 }
                 __result = Math.Max(0, __result); //negative should be handled same as zero...but just in case. zero means not a valid target (which is a stronger rejection than base method's floor of 1).
             }
 
-        }
+            [HarmonyPatch(nameof(Unit.UnitAI.movePriorityCompare))]
+            // public virtual int movePriorityCompare(Unit pOther)
+            ///friendly fire AI--move the AoE first, so we bombard then charge
+            static bool Prefix(ref int __result, Unit.UnitAI __instance, Unit ___unit, Game ___game, Unit pOther)
+            {
+                //begin some copy paste of key logic
+                bool flag = __instance.isInTheWay();
+                if (flag != pOther.AI.isInTheWay())
+                {
+                    __result = (flag) ? -1 : 1;
+                    return false;
+                }
+
+                if (__instance.SubRole == Unit.SubRoleType.URGENT != (pOther.AI.SubRole == Unit.SubRoleType.URGENT))
+                {
+                   __result = (__instance.SubRole != Unit.SubRoleType.URGENT) ? 1 : (-1);
+                    return false;
+                }
+                //end of key logic from original to preserve
+
+                int myAoE = -1;
+                int theirAoE = -1;
+                for (AttackType eLoopAttack = 0; eLoopAttack < ___game.infos().attacksNum(); eLoopAttack++) //rough estimate of the best AoE attack's impact
+                {
+                    int estimate = ___unit.attackValue(eLoopAttack) * ___unit.attackPercent(eLoopAttack) * ((int) eLoopAttack + 1); //attack radius * attack percent * attack shape; shape is usually larger as Attack Num increases
+                    myAoE = Math.Max(myAoE, estimate);
+                    estimate = pOther.attackValue(eLoopAttack) * pOther.attackPercent(eLoopAttack) * ((int)eLoopAttack + 1);
+                    theirAoE = Math.Max(theirAoE, estimate);
+                }
+                if (myAoE != theirAoE)
+                {
+                    __result = myAoE > theirAoE ? -1 : 1;
+                    return false;
+                }
+                    
+
+                return true;
+            }
+        } //PatchAI
 
         [HarmonyPatch(typeof(Infos))]
         public class PatchInfos
@@ -397,15 +443,12 @@ namespace dynamicHarmony
             }
         }
 
-
-        
-
         [HarmonyPatch]
         public class PatchClient
         {
             [HarmonyPatch(typeof(ClientInput), nameof(ClientInput.moveTo))]
             // public virtual void moveTo(Unit pUnit, Tile pTile)
-            ///outside of gamecore, so be very careful here. Client level game logic control in base game...tsk tsk. Changing it to make Kiting work
+            ///outside of gamecore, so be very careful here. Client level g logic control in base g...tsk tsk. Changing it to make Kiting work
             static bool Prefix(ref IApplication ___APP, Unit pUnit, Tile pTile)
             {
                 ClientManager ClientMgr = ___APP.GetClientManager();
@@ -428,7 +471,7 @@ namespace dynamicHarmony
 
             [HarmonyPatch(typeof(ClientUI), nameof(ClientUI.updateCityWidget))]
             //  public virtual void updateCityWidget(City city, bool bDamagePreviewOnly = false)
-            ///outside of gamecore, so be very careful here. Client level game logic control in base game...tsk tsk. Directly manipulating the city widget to display friendly fire
+            ///outside of gamecore, so be very careful here. Client level g logic control in base g...tsk tsk. Directly manipulating the city widget to display friendly fire
             static void Postfix(ref IApplication ___APP, ref ClientUI __instance, ref HashSet<int> ___msiAffectedCities, City city)
 
             {
