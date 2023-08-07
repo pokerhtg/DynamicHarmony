@@ -71,8 +71,6 @@ namespace dynamicHarmony
                 return 0;
             }
 
-
-
             [HarmonyPatch(nameof(Unit.attackEffectPreview))]
             ///define special effects to display when this unit is attacked
             ///For Kite and Skirmish
@@ -104,7 +102,7 @@ namespace dynamicHarmony
                 }
                 if (bKite)
                 {
-                    if (pFromUnit.canAttackUnitOrCity(pFromTile, pToTile, null) && pFromUnit.getTurnSteps() == 0) //kite condition: not moved and hitting
+                    if (pFromUnit.canAttackUnitOrCity(pFromTile, pToTile, null) && !pFromUnit.isFatigued() && !pFromUnit.isMarch()) //kite condition: has moves left and hitting
                     {
                         var txt2 = g.HelpText.getGenderedEffectUnitName(g.infos().effectUnit(attackerEffect), pFromUnit.getGender());
                         builder.AddTEXT(txt2);
@@ -202,7 +200,7 @@ namespace dynamicHarmony
                 {
                   return true; 
                 }
-                if (__instance.getTurnSteps() > 0) //moved; normal
+                if (__instance.isFatigued() || __instance.isMarch()) //fatigued; normal
                 {
                     return true; 
                 }
@@ -221,10 +219,11 @@ namespace dynamicHarmony
                 List<Unit.AttackOutcome> outcomes = new List<Unit.AttackOutcome>();
                 int cityHP = -1;
 
-                Infos info = __instance.game().infos();
-                if (isKite == getSpecialMove(__instance.getEffectUnits(), info, out _) && __instance.getTurnSteps() == 0)
+                Game g = __instance.game();
+                Infos info = g.infos();
+                if (isKite == getSpecialMove(__instance.getEffectUnits(), info, out _) && !__instance.isFatigued() && !__instance.isMarch())
                 {
-                    __instance.game().addTileTextAllPlayers(ref azTileTexts, pFromTile.getID(), () => "kite");
+                    g.addTileTextAllPlayers(ref azTileTexts, pFromTile.getID(), () => "hit-and-run");
                 }
                 //  
 
@@ -239,7 +238,7 @@ namespace dynamicHarmony
 
                         foreach (int iLoopTile in tilesScoped.Value)
                         {
-                            Tile pLoopTile = __instance.game().tile(iLoopTile);
+                            Tile pLoopTile = g.tile(iLoopTile);
 
                             if (__instance.canDamageUnitOrCity(pLoopTile, true)) //if this tile can be damaged, then original code will handle it
                                 continue;
@@ -258,7 +257,7 @@ namespace dynamicHarmony
                                 cityHP = city.getHP();
                                 int dmg = __instance.attackCityDamage(pFromTile, city, percent);
                                 city.changeDamage(dmg);
-                                __instance.game().addTileTextAllPlayers(ref azTileTexts, pLoopTile.getID(), () => "-" + dmg + " HP");
+                                g.addTileTextAllPlayers(ref azTileTexts, pLoopTile.getID(), () => "-" + dmg + " HP");
                                 outcomes.Add(city.getHP() == 0 ? Unit.AttackOutcome.CAPTURED : Unit.AttackOutcome.CITY);
                                 city.processYield(info.Globals.DISCONTENT_YIELD, info.Globals.CITY_ATTACKED_DISCONTENT);                  
                             }
@@ -267,7 +266,7 @@ namespace dynamicHarmony
                                 aiAdditionalDefendingUnits.Add(pLoopDefendingUnit.getID());
                                 int dmg = __instance.attackUnitDamage(pFromTile, pLoopDefendingUnit, false, percent);
                                 pLoopDefendingUnit.changeDamage(dmg, false);
-                                __instance.game().addTileTextAllPlayers(ref azTileTexts, pLoopTile.getID(), () => "-" + dmg + " HP");
+                                g.addTileTextAllPlayers(ref azTileTexts, pLoopTile.getID(), () => "-" + dmg + " HP");
                                 outcomes.Add(pLoopDefendingUnit.getHP() == 0 ? Unit.AttackOutcome.KILL : Unit.AttackOutcome.NORMAL);
 
                              }
@@ -277,7 +276,7 @@ namespace dynamicHarmony
                 if (azTileTexts.Count != 0)
                 {
                     //   MohawkAssert.Assert(false, "got text" + azTileTexts.Last());
-                    __instance.game().sendUnitBattleAction(__instance, null, pFromTile, pToTile, pToTile, Unit.AttackOutcome.NORMAL, azTileTexts, pActingPlayer?.getPlayer() ?? PlayerType.NONE, cityHP > 0, cityHP, aiAdditionalDefendingUnits, outcomes);
+                    g.sendUnitBattleAction(__instance, null, pFromTile, pToTile, pToTile, Unit.AttackOutcome.NORMAL, azTileTexts, pActingPlayer?.getPlayer() ?? PlayerType.NONE, cityHP > 0, cityHP, aiAdditionalDefendingUnits, outcomes);
                 }
             }
         }
@@ -335,6 +334,7 @@ namespace dynamicHarmony
                 __result = Math.Max(0, __result); //negative should be handled same as zero...but just in case. zero means not a valid target (which is a stronger rejection than base method's floor of 1).
             }
 
+           
             [HarmonyPatch(nameof(Unit.UnitAI.movePriorityCompare))]
             // public virtual int movePriorityCompare(Unit pOther)
             ///friendly fire AI--move the AoE first, so we bombard then charge
@@ -459,7 +459,7 @@ namespace dynamicHarmony
                 {
                     return true; 
                 }
-                if (pUnit.getTurnSteps() > 0) //moved; normal
+                if (pUnit.isFatigued() || pUnit.isMarch()) //fatigued; normal
                 {
                     return true; 
                 }

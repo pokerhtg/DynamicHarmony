@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using TenCrowns.GameCore;
+using UnityEngine;
 
 namespace DynamicUnits
 {
@@ -128,33 +129,32 @@ namespace DynamicUnits
         /// give some bonus xp before actually attacking; COMBAT_BASE_XP is expected to be drastically lowered--xp based on damage done, not kills
         protected override int attackTile(Tile pFromTile, Tile pToTile, bool bTargetTile, int iAttackPercent, ref List<TileText> azTileTexts, out AttackOutcome eOutcome, ref bool bEvent)
         {
-            int xp = 0;
+            int xp = -infos().Globals.COMBAT_BASE_XP;
             if (canDamageCity(pToTile))
-                xp = attackCityDamage(pFromTile, pToTile.city(), iAttackPercent);
+                xp += infos().Globals.BASE_DAMAGE + attackCityDamage(pFromTile, pToTile.city(), iAttackPercent);
             Unit pDefendingUnit = pToTile.defendingUnit();
+          
             if (pDefendingUnit != null && canDamageUnit(pDefendingUnit))
             {
                 int estimate = attackUnitDamage(pFromTile, pDefendingUnit, false, iAttackPercent); //no crit, but also unlimited by actual remaining HP
                 if (game().isHostileUnit(getTeam(), TribeType.NONE, pDefendingUnit))
                 {
-                    xp += estimate < pDefendingUnit.getHP() ? estimate : pDefendingUnit.getHPMax(); //either gain xp based on estimate, or a bit more for kill bonus
+                    if (estimate > infos().Globals.BASE_DAMAGE) //good job, above expected
+                        xp += pDefendingUnit.getLevel() * 2;
+                    xp += estimate + (estimate < pDefendingUnit.getHP() ? 0 : pDefendingUnit.getHPMax()); //either gain xp based on estimate, or a bit more for kill bonus
+                   
+                    if (bTargetTile)
+                    { //main attack, not a AoE
+                        xp += info().mbMelee ? pDefendingUnit.modifiedStrength() / 10 : infos().Globals.BASE_DAMAGE;
+                    }
+                    else
+                    {
+                        xp *= 150;
+                        xp /= 100;
+                    }
                 }
-                /*else if (game().areTeamsAllied(getTeam(), pDefendingUnit.getTeam()))
-                {
-                     xp -= estimate * 2;
-                }*/
-                if (iAttackPercent == 100)
-                { //main attack, not a AoE
-                    xp += info().mbMelee ? pDefendingUnit.modifiedStrength() / 10 : infos().Globals.BASE_DAMAGE;
-                }
-                else
-                {
-                    xp *= 150;
-                    xp /= 100;
-                }
-               
-              
             }
+          
             doXP(xp, ref azTileTexts);
             return base.attackTile(pFromTile, pToTile, bTargetTile, iAttackPercent, ref azTileTexts, out eOutcome, ref bEvent);
         }
