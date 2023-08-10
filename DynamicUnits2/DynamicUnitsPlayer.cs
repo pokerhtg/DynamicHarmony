@@ -177,12 +177,12 @@ namespace DynamicUnits
                 desireForPeace -= offset;
 
             int diplomaticSupport = countTeamDiplomacy(infos().Globals.PEACE_DIPLOMACY) - countTeamWars()
-               - (pOtherPlayer.countTeamDiplomacy(infos().Globals.PEACE_DIPLOMACY) - pOtherPlayer.countTeamWars());
+               - (pOtherPlayer.countTeamDiplomacy(infos().Globals.PEACE_DIPLOMACY) - 2 * pOtherPlayer.countTeamWars());
 
             desireForPeace -= weight * diplomaticSupport;
 
             // Debug.Log(this.mePlayer+ "'s raw peace perceiption of " + other + " is " + desireForPeace);
-            desireForPeace = infos().utils().range(desireForPeace, -200, 200);
+            desireForPeace = infos().utils().range(desireForPeace, -200, 200);  
             return desireForPeace;
         }
         protected override int calculateTotalStrength()

@@ -187,10 +187,10 @@ namespace dynamicHarmony
             }
 
 
-            [HarmonyPatch(nameof(Unit.canAct), new Type[] { typeof(Player), typeof(int), typeof(bool), typeof(bool) })]
-            // canAct(Player pActingPlayer, int iCost = 1, bool bRout = false, bool bCancelImprovement = false)
+            [HarmonyPatch(nameof(Unit.canActMove), new Type[] { typeof(Player), typeof(int), typeof(bool)})]
+            // Player pActingPlayer, int iMoves = 1, bool bAssumeMarch = false)
             ///for Kite
-            static bool Prefix(ref Unit __instance, ref bool __result, Player pActingPlayer, int iCost = 1, bool bRout = false, bool bCancelImprovement = false)
+            static bool Prefix(ref Unit __instance, ref bool __result)
             {
                 
                 if (__instance.getCooldown() != __instance.game().infos().Globals.ATTACK_COOLDOWN) //if didn't attack, normal
@@ -200,12 +200,12 @@ namespace dynamicHarmony
                 {
                   return true; 
                 }
-                if (__instance.isFatigued() || __instance.isMarch()) //fatigued; normal
+                if (__instance.isFatigued() || __instance.isMarch()) //fatigued or marching; normal
                 {
                     return true; 
                 }
 
-                __result = true; //can move....once.....hmmmm
+                __result = true; //can move
                 return false;
             }
 
@@ -334,7 +334,40 @@ namespace dynamicHarmony
                 __result = Math.Max(0, __result); //negative should be handled same as zero...but just in case. zero means not a valid target (which is a stronger rejection than base method's floor of 1).
             }
 
-           
+            [HarmonyPatch(typeof(Unit.UnitAI), "doRoleAction")]
+            // protected virtual bool doAttackTargetRole(PathFinder pPathfinder, bool bSafe)
+            ///kite AI aid--teach 'em how to say goodbye
+            static void Prefix(ref Unit.UnitAI __instance, Unit ___unit, Game ___game, PathFinder pPathfinder)
+            {
+                if (PatchUnitBehaviors.getSpecialMove(___unit.getEffectUnits(), ___game.infos(), out _) == isKite && !___unit.isFatigued())
+                {
+                    //SHOOT! 
+                  //  MohawkAssert.Assert(false, "bonus shot!");
+                    __instance.doAttackFromCurrentTile(false);
+                }
+            }
+            [HarmonyPatch(typeof(Unit.UnitAI), "doRoleAction")]
+           // protected virtual bool doAttackTargetRole(PathFinder pPathfinder, bool bSafe)
+            ///kite AI aid--teach 'em how to say goodbye
+           static void Postfix(ref Unit.UnitAI __instance, Unit ___unit, ref Func<Tile, long> ___retreatValueDelegate,  Game ___game, PathFinder pPathfinder)
+            {
+              //RUN! 
+               if (___retreatValueDelegate == null)
+                    ___retreatValueDelegate = new Func<Tile, long>(__instance.retreatTileValue);
+                
+                    if (PatchUnitBehaviors.getSpecialMove(___unit.getEffectUnits(), ___game.infos(), out _) == isKite && !___unit.isFatigued() && ___unit.getCooldown() == ___game.infos().Globals.ATTACK_COOLDOWN)
+                    doMoveToBestTile(__instance, pPathfinder, ___unit.getStepsToFatigue(), false, null, ___retreatValueDelegate); 
+            }
+         
+
+            [HarmonyReversePatch]
+            [HarmonyPatch("doMoveToBestTile")]
+            public static bool doMoveToBestTile(Unit.UnitAI ai, PathFinder pPathfinder, int iMaxSteps, bool bSafe, Predicate<Tile> tileValid, Func<Tile, long> tileValue)
+            {
+                throw new NotImplementedException("It's a stub");
+            }
+            
+
             [HarmonyPatch(nameof(Unit.UnitAI.movePriorityCompare))]
             // public virtual int movePriorityCompare(Unit pOther)
             ///friendly fire AI--move the AoE first, so we bombard then charge
@@ -516,9 +549,7 @@ namespace dynamicHarmony
                             }
                         }
                     }
-                }
-              
-                
+                }          
             }
 
             [HarmonyReversePatch]

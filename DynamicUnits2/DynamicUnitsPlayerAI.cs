@@ -68,5 +68,17 @@ namespace DynamicUnits
             return infos.unit(eUnit).miMovement < 1 ? val / 8: val;
         }
 
+        public override int getWarOfferPercent(PlayerType eOtherPlayer, bool bDeclare)
+        {
+            
+            int chance = base.getWarOfferPercent(eOtherPlayer, bDeclare);
+            int desire = ((DynamicUnitsPlayer)(player)).desirePeace(eOtherPlayer);
+            if (desire < 0)
+                chance -= desire / 20; //desire is between -200 and 0; so this increases chance by up to 10% 
+            if (player.countTeamWars() == 0)
+                chance += 5;
+            chance += player.getOrdersLeft() / 10 - player.countTeamWars() * 3; //each war takes about 30 orders to maintain, give or take
+            return chance;
+        }
     }
 }
