@@ -43,7 +43,6 @@ namespace DynamicUnits
             int perceiptionWeight = 3;
             //20 year war gives standard desire for peace. shorter wars aren't as conclusive so desire is closer to 0
             int conclusivePercent = (60 + 2 *getTeamConflictNumTurns(eIndex1, eIndex2));
-          
 
             return (perceiptionWeight * perception + rawWarScore) * conclusivePercent / 100;
         }
@@ -59,5 +58,9 @@ namespace DynamicUnits
                 return salePrice;
             }
         }
-    }
+        //Tribal allies shall raid and not fight barbs!
+   //     public override void setTribeDiplomacy(TribeType eIndex1, TeamType eIndex2, DiplomacyType eNewValue, bool bAnnounce)
+   //     {
+   //         base.setTribeDiplomacy(eIndex1, eIndex2, eNewValue, bAnnounce);
+}
 }

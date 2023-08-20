@@ -71,7 +71,7 @@ namespace DynamicUnits
         {
             int cost = infos().utils().modify(infos().tech(eTech).miCost, infos().Globals.TECH_GLOBAL_MODIFIER);
             int eligibleNations = 0;
-            int maxDiscount = 95; //won't end up this high, thanks to integer divisions
+            const int MAXDISCOUNT = 95; //won't end up this high, thanks to integer divisions
             int knownNations = 0;
             int knownDist = 1;
             int totalDist = 1;
@@ -104,13 +104,18 @@ namespace DynamicUnits
                 }
             }
 
-            int discount = maxDiscount * (1 + knownNations) * (totalDist - knownDist) / totalDist / (1 + eligibleNations);
-
+            int discount = MAXDISCOUNT * (1 + knownNations) * (totalDist - knownDist) / totalDist / (1 + eligibleNations);
+           
             if (knownNations == 0)
                 discount -= 20; //no one else knows? 20% more expensive!
             discount -= (int)Math.Pow((int)getDifficulty() - 1, 2); //playing on harder difficulties? research gets harder (36% on Great)
+            if (infos().tech(eTech).mbTrash)
+                discount += 10;
 
-            cost = infos().utils().modify(cost, -discount, true);
+            if (eligibleNations == 0) //unique tech just for you
+                discount = (MAXDISCOUNT + discount) / 2;
+
+            cost = infos().utils().modify(cost, discount > MAXDISCOUNT? -MAXDISCOUNT: -discount, true);
 
             return cost;
         }
