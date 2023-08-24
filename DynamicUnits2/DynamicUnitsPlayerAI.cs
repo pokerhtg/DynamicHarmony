@@ -27,6 +27,8 @@ namespace DynamicUnits
             AI_TURNS_BETWEEN_KILLS += offset;
             AI_CHARACTER_OPINION_VALUE *= 2;
             AI_NO_WONDER_TURNS = 5 + offset * 2;
+            AI_WONDER_VALUE -= 50 * (13 - offset);
+            AI_VP_VALUE /= 2;
             AI_UNIT_LEVEL_VALUE *= 2;
             AI_UNIT_PUSH_VALUE *= 2;
             AI_UNIT_ROUT_VALUE *= 2;
@@ -39,10 +41,10 @@ namespace DynamicUnits
             AI_YIELD_TURNS += 3 * offset;
            // AI_YIELD_SHORTAGE_PER_TURN_MODIFIER /= 2;
             AI_UNIT_RANDOM_PROMOTION_VALUE = AI_UNIT_PROMOTE_VALUE/2;
-            AI_WONDER_VALUE -= 50 * offset;
-            AI_TRADE_NETWORK_VALUE_ESTIMATE = 400 + 30*offset;
-            AI_BUILD_URBAN_VALUE *= 2;
-          
+            
+            AI_TRADE_NETWORK_VALUE_ESTIMATE = 400 + 40*offset;
+            AI_BUILD_URBAN_VALUE *= 4;
+            AI_IDLE_XP_VALUE /= 2;
             AI_CITY_REBEL_VALUE /= 3;
             AI_MAX_NUM_WORKERS_PER_HUNDRED_CITIES = 200;
             AI_WASTED_EFFECT_VALUE = -offset;

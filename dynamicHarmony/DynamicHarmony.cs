@@ -6,9 +6,9 @@ using System.Collections.Generic;
 using Mohawk.SystemCore;
 using TenCrowns.GameCore.Text;
 using TenCrowns.ClientCore;
+using System.Linq;
 
 /// TODO priority
-/// charge  3
 /// evade 2
 
 
@@ -29,14 +29,16 @@ namespace dynamicHarmony
 
         public override void Shutdown()
         {
+            if (harmony == null)
+                return;
+            harmony.UnpatchAll(MY_HARMONY_ID);
             harmony = null;
-          //  harmony.UnpatchAll(MY_HARMONY_ID);
+         
         }
         //decoding special effects from aiAttackValue's MOVE_SPECIAL
         static readonly int isSkirmisher = -1;
         static readonly int isKite = -2;
-
-
+       
         [HarmonyPatch(typeof(Unit))]
         public class PatchUnitBehaviors
         {
@@ -50,14 +52,9 @@ namespace dynamicHarmony
             /// <returns> int code of the MOVE_SPECIAL </returns>
             public static int getSpecialMove(ReadOnlyList<EffectUnitType> effectUnitTypes, Infos info, out EffectUnitType eff)
             {
-                int index = -1;
+                int index = AttackIndex("MOVE_SPECIAL", info);
                 eff = specialEffect;
-                for (AttackType eLoopAttack = 0; eLoopAttack < info.attacksNum(); eLoopAttack++)
-                {
-                    if (eLoopAttack == info.getType<AttackType>("MOVE_SPECIAL"))
-                        index = (int)eLoopAttack;
-                }
-
+                
                 if (index > -1)
                     foreach (EffectUnitType eLoopEffectUnit in effectUnitTypes)
                     {
@@ -71,8 +68,105 @@ namespace dynamicHarmony
                     }
                 return 0;
             }
+            public static int AttackIndex(String type, Infos info)
+            {
+                for (AttackType eLoopAttack = 0; eLoopAttack < info.attacksNum(); eLoopAttack++)
+                {
+                    if (eLoopAttack == info.getType<AttackType>(type))
+                        return (int)eLoopAttack;
+                }
+                return -1;
+            }
+            public static bool isCharge(Unit unit, out Tile impactFrom, Tile pFromTile=null, Tile pToTile=null )
+            {
+                ///TODO: use attack value's Value from xml...to denote the max charge distance? Right now all charges are defined to have range of exactly 2
+                impactFrom = null;
+                if (unit == null)
+                    return false;
+               
+                bool isCharge = false;
+                var info = unit.game().infos();
+                int chargeIndex = AttackIndex("CHARGE", info);
+                
+                if (chargeIndex > -1)
+                    foreach (EffectUnitType eLoopEffectUnit in unit.getEffectUnits())
+                    {
+                        int iSubValue = info.effectUnit(eLoopEffectUnit).maiAttackValue[chargeIndex];
+                        if (iSubValue != 0)
+                        {
+                            isCharge = true;
+                        }
+                    }
+               
+                if (unit.info().mbMelee && isCharge) 
+                {
+                
+                    if (pToTile == null || pFromTile == null)
+                        return true;
 
-           
+                    List<int> enemies = new List<int>();
+                    pToTile.getAliveUnits(enemies);
+
+                    if (!pToTile.hasCity() && enemies.Count == 1 && ((pToTile.improvement()?.miDefenseModifier?? 0) < 1) && pFromTile.distanceTile(pToTile) == 2 //here's that "2" referred to in the TODO above
+                        && pToTile.defendingUnit().movement() > 0 && pToTile.canUnitPass(unit.getType(), unit.getPlayer(), unit.getTribe(), unit.getTeam(), false, true))
+                    {
+                       
+                        List<int> adjTiles = new List<int>();
+                        pFromTile.getTilesAtDistance(1, adjTiles, false);
+                        Tile candidate1 = null, candidate2 =null;
+                        for (int i = 0; i < adjTiles.Count; i++)
+                        {
+                            Tile friend = unit.game().tile(adjTiles[i]);
+                            if (pToTile.isTileAdjacent(friend))
+                            {
+                                if (candidate1 == null)
+                                    candidate1 = friend;
+                                else if (candidate2 == null)
+                                    candidate2 = friend;
+                                else
+                                    MohawkAssert.Assert(false, "Found a third tile; geometry is broken");
+                            }
+                        }
+                        if (candidate1 != null && candidate1.canUnitOccupy(unit, unit.getTeam(), true, true, true))
+                        {
+                            impactFrom= candidate1;
+                            return true;
+                        }
+                        else if(candidate2 != null && candidate2.canUnitOccupy(unit, unit.getTeam(), true, true, true))
+                        {
+                            impactFrom = candidate2;
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            /// <summary>
+            /// find the first effectUnit that provides an attack matching the name of the attack
+            /// </summary>
+            /// <param name="effectUnitTypes"></param>
+            /// <param name="target"></param>
+            /// <param name="info"></param>
+            /// <returns></returns>
+            public static EffectUnitType getEffectName(ReadOnlyList<EffectUnitType> effectUnitTypes, String target, Infos info)
+            {
+                for (AttackType eLoopAttack = 0; eLoopAttack < info.attacksNum(); eLoopAttack++)
+                {
+                    if (eLoopAttack == info.getType<AttackType>(target))
+                        foreach (EffectUnitType eLoopEffectUnit in effectUnitTypes)
+                        {
+                            int iSubValue = info.effectUnit(eLoopEffectUnit).maiAttackValue[(int) eLoopAttack];
+                            if (iSubValue != 0)
+                            {
+                                return eLoopEffectUnit;
+                            }
+                        }
+                }
+                return EffectUnitType.NONE;
+            }
+
             [HarmonyPatch(nameof(Unit.hasPush))]
             ///for skirmish, which is treated as if the attacker has Push
             static void Postfix(ref bool __result, ref Unit __instance, Tile pToTile)
@@ -121,8 +215,51 @@ namespace dynamicHarmony
                     }
                 }
             }
+            [HarmonyPatch(nameof(Unit.getTargetTiles))]
+            //         public virtual void getTargetTiles(Tile pFromTile, List<int> aiTargetTiles)
+            ///charge! gives greater attack range, sort of
+            static void Postfix(ref Unit __instance, Tile pFromTile, ref List<int> aiTargetTiles)
+            {
+                if (isCharge(__instance, out _))
+                {
+                    int iNumValidTilesAtRange = 0;
+                    using (var listScoped = CollectionCache.GetListScoped<int>())
+                    {
+                        pFromTile.getTilesAtDistance(2, listScoped.Value);
 
-           [HarmonyPatch(nameof(Unit.attackDamagePreview))]
+                        foreach (int iLoopTile in listScoped.Value)
+                        { 
+                            Tile pToTile = __instance.game().tile(iLoopTile);
+                            if (isCharge(__instance, out _, pFromTile, pToTile)) 
+                            {
+                                ++iNumValidTilesAtRange;
+                                aiTargetTiles.Add(iLoopTile);
+                            }
+                        }
+                    }
+                }
+            }
+            [HarmonyPatch(nameof(Unit.canTargetTile), new Type[] { typeof(Tile), typeof(Tile)})]
+            //       public virtual bool canTargetTile(Tile pFromTile, Tile pToTile)
+            ///charge! gives greater attack range, sort of
+            static void Postfix(ref Unit __instance, ref bool __result, Tile pFromTile, Tile pToTile)
+            {
+                if (__result)
+                    return;
+                if (isCharge(__instance, out _, pFromTile, pToTile))
+                    __result = true;
+
+            }
+            [HarmonyPatch(nameof(Unit.attackDamagePreview))]
+            ///for Charge
+            static void Prefix(Unit __instance, Unit pFromUnit, ref Tile pMouseoverTile)
+            {
+                if (isCharge(pFromUnit, out Tile fromTile, pMouseoverTile, __instance.tile()))
+                {
+                    pMouseoverTile = fromTile;
+                }
+            }
+            [HarmonyPatch(nameof(Unit.attackDamagePreview))]
             ///for friendly fire
             static void Postfix(ref int __result, Unit __instance, Unit pFromUnit, Tile pMouseoverTile, bool bCheckHostile)
             {
@@ -157,18 +294,19 @@ namespace dynamicHarmony
                                     //then damage anyway. AKA friendly fire
                                     else
                                         __result = pFromUnit.attackUnitDamage(pFromTile, __instance, false, pFromUnit.attackPercent(eLoopAttack));
-
                                 }
                             }
                         }
                     }
                 }
             }
+   
             [HarmonyPatch(nameof(Unit.attackEffectPreview))]
             ///define special effects to display when this unit is attacked
             ///For Kite and Skirmish
             static bool Prefix(ref TextBuilder __result, ref Unit __instance, ref TextBuilder builder, ref Unit pFromUnit, Tile pFromTile)
             {
+                ///pFromUnit is attacking this (__instance) unit in this preview
                 var pToTile = __instance.tile();
                 var g = __instance.game();
                 EffectUnitType defenderEffect, attackerEffect;
@@ -178,16 +316,20 @@ namespace dynamicHarmony
                 bool bKite = isKite == specialMoveCodeAttacker;
                 bool special = false;
 
+                if (isCharge(pFromUnit, out _, pFromTile, pToTile))
+                {
+                    var charge = g.HelpText.getGenderedEffectUnitName(g.infos().effectUnit(getEffectName(pFromUnit.getEffectUnits(), "CHARGE", g.infos())), pFromUnit.getGender());
+                    builder.AddTEXT(charge);
+                    __result = builder;
+                    special = true; //Special!
+                }
+
                 if (bSkirmish)
                 {
-                    if (__instance.attackDamagePreview(pFromUnit, pFromTile, pFromUnit.player()) >= __instance.getHP()) //dead
-                        return true; //not special
-
-                    if (pFromUnit.canAttackUnitOrCity(pFromTile, pToTile, null) && pFromTile.isTileAdjacent(pToTile) && !pToTile.hasCity() && (pToTile.improvement()?.miDefenseModifier ?? 0) < 1) //skirmish condition: getting hit, adj, and not special tile
+                    if (__instance.attackDamagePreview(pFromUnit, pFromTile, pFromUnit.player()) < __instance.getHP() // not dead
+                        && pFromUnit.canAttackUnitOrCity(pFromTile, pToTile, null) && pFromTile.isTileAdjacent(pToTile) && !pToTile.hasCity() && (pToTile.improvement()?.miDefenseModifier ?? 0) < 1) //skirmish condition: getting hit, adj, and not special tile
                     {
                         //Special!
-
-
                         if (pFromUnit.getPushTile(__instance, pFromTile, pToTile) == null)
                             builder.AddTEXT("TEXT_CONCEPT_STUN");
                         else
@@ -215,7 +357,8 @@ namespace dynamicHarmony
                         special = true; //Special!
                     }
                 }
-
+                
+                
                 //if pushing from afar
                 if (pFromUnit.hasPush(pToTile) && pFromUnit.getPushTile(pFromUnit, pFromTile, pToTile) == pToTile)
                     special = true; //Special! Let's ignore "push" that doesn't move the unit
@@ -224,28 +367,59 @@ namespace dynamicHarmony
 
             [HarmonyPatch(nameof(Unit.attackUnitOrCity), new Type[] { typeof(Tile), typeof(Player) })]
             ///for Kite and friendly fire; defines what can be attacked, and what effect pop up texts to display
+            /// also for Charge, so to handle the unit jumping and defender scattering
             /// should update attack damage preview and/or attack effect preview to match logic every time this changes; consider refactor
-            static void Prefix(ref Unit __instance, Tile pToTile, Player pActingPlayer)
+            static void Prefix(ref Unit __instance, ref Tile pToTile, Player pActingPlayer, out bool __state)
             {
                 Tile pFromTile = __instance.tile();
                 List<TileText> azTileTexts = new List<TileText>();
+
                 List<int> aiAdditionalDefendingUnits = new List<int>();
                 List<Unit.AttackOutcome> outcomes = new List<Unit.AttackOutcome>();
                 int cityHP = -1;
-
+                __state = false;
                 Game g = __instance.game();
                 Infos info = g.infos();
+                var pToUnit = pToTile.defendingUnit(); 
+                if (pToUnit == null) //something is wrong. abort, abort!
+                    return; 
                 if (isKite == getSpecialMove(__instance.getEffectUnits(), info, out _) && !__instance.isFatigued() && !__instance.isMarch())
                 {
-                    if (pToTile.defendingUnit().attackDamagePreview(__instance, pFromTile, __instance.player()) >= pToTile.defendingUnit().getHP() && //dead
-                       __instance.canAdvanceAfterAttack(pFromTile, pToTile, pToTile.defendingUnit(), true)) //and routing
+                    if (pToUnit.attackDamagePreview(__instance, pFromTile, __instance.player()) >= pToUnit.getHP() && //dead
+                       __instance.canAdvanceAfterAttack(pFromTile, pToTile, pToUnit, true)) //and routing
                     {
                         //what a specific situation! Routing, so not running.
                     }
                     else
-                        g.addTileTextAllPlayers(ref azTileTexts, pFromTile.getID(), () => "hit-and-run");
+                    {
+                        SendTileTextAll("Hit-and-run", pFromTile.getID(), g);       
+                    }               
                 }
+                if (isCharge(__instance, out Tile impactFrom, pFromTile, pToTile))
+                {
+                   // MohawkAssert.Assert(false, "charging");
+                    List<TileText> azTileTexts2 = new List<TileText>();
+                    g.addTileTextAllPlayers(ref azTileTexts2, impactFrom.getID(), () => "Charge");
+                   
+                    UnitMoveAction unitAction = new UnitMoveAction
+                    {
+                        miUnitID = __instance.getID(),
+                        meType = UnitActionType.MOVE,
+                        maiTiles = new List<int>
+                                    {
+                                        pFromTile.getID(),
+                                        impactFrom.getID(),  
+                                        pToTile.getID(),
+                                    },
+                        maTileTexts = azTileTexts2,
+                        meActingPlayer = pActingPlayer?.getPlayer() ?? PlayerType.NONE
+                    };
+                    g.sendUnitMove(unitAction);
+                   
+                    setTileID(__instance, impactFrom.getID());
+                    __state = true;
                 
+                }
                 //look for friendly fire
                 for (AttackType eLoopAttack = 0; eLoopAttack < info.attacksNum(); eLoopAttack++)
                 {
@@ -270,37 +444,71 @@ namespace dynamicHarmony
                                 continue;
                             if (percent < 1)
                                 continue;
+                            int dmg = 0;
                             if (pLoopTile.hasCity())
                             {
-
                                 City city = pLoopTile.city();
                                 cityHP = city.getHP();
-                                int dmg = __instance.attackCityDamage(pFromTile, city, percent);
+                                dmg = __instance.attackCityDamage(pFromTile, city, percent);
                                 if (dmg < 1)
                                     continue;
-                                city.changeDamage(dmg);
-                                g.addTileTextAllPlayers(ref azTileTexts, pLoopTile.getID(), () => "-" + dmg + " HP");
+                                city.changeDamage(dmg);                        
                                 outcomes.Add(city.getHP() == 0 ? Unit.AttackOutcome.CAPTURED : Unit.AttackOutcome.CITY);
                                 city.processYield(info.Globals.DISCONTENT_YIELD, info.Globals.CITY_ATTACKED_DISCONTENT);                  
                             }
                             else
                             {
                                 aiAdditionalDefendingUnits.Add(pLoopDefendingUnit.getID());
-                                int dmg = __instance.attackUnitDamage(pFromTile, pLoopDefendingUnit, false, percent);
+                                dmg = __instance.attackUnitDamage(pFromTile, pLoopDefendingUnit, false, percent);
                                 if (dmg < 1)
                                     continue;
-                                pLoopDefendingUnit.changeDamage(dmg, false);
-                                g.addTileTextAllPlayers(ref azTileTexts, pLoopTile.getID(), () => "-" + dmg + " HP");
+                                pLoopDefendingUnit.changeDamage(dmg, false);                            
                                 outcomes.Add(pLoopDefendingUnit.getHP() == 0 ? Unit.AttackOutcome.KILL : Unit.AttackOutcome.NORMAL);
-
                              }
+
+                            g.addTileTextAllPlayers(ref azTileTexts, pLoopTile.getID(), () => "-" + dmg + " HP");
                         }
                     }
                 }
                 if (azTileTexts.Count != 0)
-                {
+                {                  
                     g.sendUnitBattleAction(__instance, null, pFromTile, pToTile, pToTile, Unit.AttackOutcome.NORMAL, azTileTexts, pActingPlayer?.getPlayer() ?? PlayerType.NONE, cityHP > 0, cityHP, aiAdditionalDefendingUnits, outcomes);
                 }
+            }
+
+            private static void SendTileTextAll(string v, int tileID, Game g)
+            {
+                
+                for (PlayerType playerType = (PlayerType)0; playerType < g.getNumPlayers(); playerType++)
+                {
+                    g.sendTileText(new TileText(v, tileID, playerType));
+                }
+
+            }
+
+            [HarmonyPatch(nameof(Unit.attackUnitOrCity), new Type[] { typeof(Tile), typeof(Player) })]
+            /// for Charge, __state represents mid-charging action. We want to set tile as the last thing
+            static void Postfix(ref Unit __instance, Tile pToTile, Player pActingPlayer, bool __state)
+            {
+                if (!__state)
+                    return;
+     
+                UnitMoveAction unitAction = new UnitMoveAction
+                {
+                    miUnitID = __instance.getID(),
+                    meType = UnitActionType.MOVE,
+                    maiTiles = new List<int>
+                                    {
+                                        __instance.getTileID(),                           
+                                        pToTile.getID()
+                                    },
+                    meActingPlayer = pActingPlayer?.getPlayer() ?? PlayerType.NONE
+                };
+                __instance.game().sendUnitAction(unitAction, true);
+                if (pToTile.defendingUnit() != null) //could be dead already
+                    pToTile.defendingUnit().bounce();
+
+                setTileID(__instance, pToTile.getID());
             }
 
             [HarmonyPatch(nameof(Unit.canActMove), new Type[] { typeof(Player), typeof(int), typeof(bool) })]
@@ -310,7 +518,7 @@ namespace dynamicHarmony
             {
 
                 if (__instance.getCooldown() != __instance.game().infos().Globals.ATTACK_COOLDOWN) //if didn't attack, normal
-                                                                                                   //   { MohawkAssert.Assert(false, "hatch 1 ");
+                                                                                                  
                     return true;
                 if (getSpecialMove(__instance.getEffectUnits(), __instance.game().infos(), out _) != isKite) //if not kite, normal. //may want to catch the out and display text
                 {
@@ -324,6 +532,14 @@ namespace dynamicHarmony
                 __result = true; //can move
                 return false;
             }
+
+            [HarmonyReversePatch]
+            [HarmonyPatch(("setTileID"), new Type[] {typeof(int), typeof(bool), typeof(bool)})]
+            public static void setTileID(Unit unit, int iNewValue, bool bFinalMove = true, bool bLastStep = true)
+            {
+                throw new NotImplementedException("It's a stub");
+            }
+
         }
 
         [HarmonyPatch(typeof(Unit.UnitAI))]
@@ -379,6 +595,49 @@ namespace dynamicHarmony
                 __result = Math.Max(0, __result); //negative should be handled same as zero...but just in case. zero means not a valid target (which is a stronger rejection than base method's floor of 1).
             }
 
+            [HarmonyPatch(typeof(Unit.UnitAI), nameof(Unit.UnitAI.getAttackTiles), new Type[] { typeof(PathFinder), typeof(Tile), typeof(bool), typeof(List<int>) })]
+            // public virtual void getAttackTiles(PathFinder pPathfinder, Tile pTargetTile, bool bTestUnits, List<int> aiAttackTiles)
+            ///charge AI--did you know, melee can attack range 2?
+            static bool Prefix(ref Unit ___unit, Tile pTargetTile, bool bTestUnits, List<int> aiAttackTiles)
+            {
+                try
+                {
+                    if (PatchUnitBehaviors.isCharge(___unit, out _))
+                    {
+                        int iNumValidTilesAtRange = 0;
+                        using (var listScoped = CollectionCache.GetListScoped<int>())
+                        {
+                            pTargetTile.getTilesAtDistance(2, listScoped.Value);
+                            foreach (int iLoopTile in listScoped.Value)
+                            {
+                                Tile pMoveTile = ___unit.game().tile(iLoopTile);
+
+                                if (___unit.at(pMoveTile) || ___unit.canAct(___unit.player()))
+                                {
+                                    if (___unit.canTargetTile(pMoveTile, pTargetTile))
+                                    {
+                                        ++iNumValidTilesAtRange;
+                                        if (___unit.canOccupyTile(pMoveTile, ___unit.getTeam(), bTestUnits, bTestUnits))
+                                        {
+                                            if (___unit.player().AI.isTileReachable(pMoveTile, ___unit.tile()))
+                                            {
+                                                aiAttackTiles.Add(iLoopTile);
+                                                return false;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return true;
+                }
+                catch (Exception)
+                {
+                    return false; //a literal catch all solution--the method causes some null pointer...somewhere
+                }
+            }
+
             [HarmonyPatch(typeof(Unit.UnitAI), "doRoleAction")]
             // protected virtual bool doAttackTargetRole(PathFinder pPathfinder, bool bSafe)
             ///kite AI aid--teach 'em how to say goodbye
@@ -387,7 +646,14 @@ namespace dynamicHarmony
                 if (PatchUnitBehaviors.getSpecialMove(___unit.getEffectUnits(), ___game.infos(), out _) == isKite && !___unit.isFatigued())
                 {
                     //SHOOT! 
-                    __instance.doAttackFromCurrentTile(false);
+                    try
+                    {
+                        __instance.doAttackFromCurrentTile(false);
+                    }
+                    catch (Exception)
+                    {
+                        MohawkAssert.Assert(false, "failed to leave a parting shot before retreating");
+                    }
                 }
             }
             [HarmonyPatch(typeof(Unit.UnitAI), "doRoleAction")]
@@ -501,16 +767,21 @@ namespace dynamicHarmony
                 Infos infos = __instance.ModSettings.Infos;
                 try
                 {
-                    int iValue = infos.effectUnit(eEffectUnit).maiAttackValue[(int)infos.getType<AttackType>("MOVE_SPECIAL")];
-
-                    if (iValue == isSkirmisher)
+                    int moveSpecialCode = infos.effectUnit(eEffectUnit).maiAttackValue[(int)infos.getType<AttackType>("MOVE_SPECIAL")];
+                    int chargeCode = infos.effectUnit(eEffectUnit).maiAttackValue[(int)infos.getType<AttackType>("CHARGE")];
+                    if (moveSpecialCode == isSkirmisher)
                     {
                         builder.AddTEXT("TEXT_HELP_RETREAT_SHORT");
                     }
-                    else if (iValue == isKite)
+                    else if (moveSpecialCode == isKite)
                     {
                         builder.AddTEXT("TEXT_HELP_KITE_SHORT");
                     }
+                    if (chargeCode != 0)
+                    {
+                        builder.AddTEXT("TEXT_HELP_CHARGE_SHORT");
+                    }
+                    
                 }
                 catch (Exception e)
                 {
@@ -523,6 +794,8 @@ namespace dynamicHarmony
         [HarmonyPatch]
         public class PatchClient
         {
+            static Tile phantom;
+            static int phantomDelay = 0;
             [HarmonyPatch(typeof(ClientInput), nameof(ClientInput.moveTo))]
             // public virtual void moveTo(Unit pUnit, Tile pTile)
             ///outside of gamecore, so be very careful here. Client level g logic control in base g...tsk tsk. Changing it to make Kiting work
@@ -544,6 +817,41 @@ namespace dynamicHarmony
                 ClientMgr.sendMoveUnit(pUnit, pTile, false, false, ClientMgr.Selection.getSelectedUnitWaypoint());
                 ClientMgr.Selection.setSelectedUnitWaypoint(null);
                 return false;
+            }
+
+            [HarmonyPatch(typeof(ClientUI), nameof(ClientUI.updateUnitAttackPreviewSelection))]
+            // public virtual void updateUnitAttackPreviewSelection()
+            /// first half of patching preview by setting the location of the phantom tile to be injected into the method later
+            static void Prefix(ref IApplication ___APP)
+            {
+                ClientManager ClientMgr = ___APP.GetClientManager();
+                var pSelectedUnit = ClientMgr.Selection.getSelectedUnit();
+                Tile pMouseoverTile = ClientMgr.Selection.getAttackPreviewTile();
+
+                if (PatchUnitBehaviors.isCharge(pSelectedUnit, out Tile newFrom, pSelectedUnit.tile(), pMouseoverTile))
+                {
+                    phantom = newFrom;
+                    phantomDelay = 2; //this magic number depends on the IL code and where the assignment we want to change is happening within the method
+                   
+                }
+            }
+
+            [HarmonyPatch(typeof(Unit), nameof(Unit.tile))]
+            // public virtual void updateUnitAttackPreviewSelection()
+            /// second half of patching preview by setting the location of the phantom tile to be injected into the method later
+            static void Postfix(ref Tile __result)
+            {
+                if (phantom == null)
+                    return;
+                else if (phantomDelay > 1)
+                {
+                    phantomDelay--;
+                    return;
+                }
+              //  MohawkAssert.Assert(false, "phantom assigned: instead of " + __result.getX() + ", " + __result.getY() + ", we pretend the tile is at (" + phantom.getX() + ", " + phantom.getY() );
+                __result = phantom;
+                phantomDelay = 0;
+                phantom = null;
             }
 
             [HarmonyPatch(typeof(ClientUI), nameof(ClientUI.updateCityWidget))]

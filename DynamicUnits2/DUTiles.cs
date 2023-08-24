@@ -100,14 +100,5 @@ namespace DynamicUnits
             }
             return base.canUnitOccupy(pUnit, eVisibilityTeam, bTestTheirUnits, bTestOurUnits, bFinalMoveTile);
         }
-        /**
-        public override bool canPlaceUnit(UnitType eUnit, PlayerType ePlayer, TribeType eTribe, TeamType eTeamAvoid, Tile pOriginalTile, bool bSpecialTile, int iRequiresArea, City pRequiresCity)
-        {
-            bool result = base.canPlaceUnit(eUnit, ePlayer, eTribe, eTeamAvoid, pOriginalTile, bSpecialTile,iRequiresArea, pRequiresCity);
-            if (game().isPlayerHumanOriginal(ePlayer))
-                Debug.Log("can" + (result?"": "'t") + " placing unit " + eUnit + ", at " + getX() + ", " + getY());
-            return result;
-        }
-        **/
-        }
+     }
 }

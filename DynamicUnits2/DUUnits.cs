@@ -89,7 +89,12 @@ namespace DynamicUnits
                 }
             }
         }
-
+        public override bool canMarchEver()
+        {
+            if (movement() < 0)
+                return false;
+            return base.canMarchEver();
+        }
         public override bool canSwapUnits(Tile pTile, Player pActingPlayer, bool bMarch)
         {
             if (movement() < 0)

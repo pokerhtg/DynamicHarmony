@@ -40,6 +40,10 @@
     <Reference Include="Mohawk.SystemCore">
       <HintPath>..\DynamicUnits2\bin\Debug\Mohawk.SystemCore.dll</HintPath>
     </Reference>
+    <Reference Include="Mohawk.UIInterfaces, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorld\OldWorld_Data\Managed\Mohawk.UIInterfaces.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
