@@ -24,7 +24,7 @@ namespace DynamicUnits
         {
             if (pTile.isWater())
                 return base.canAnchor(pActingPlayer, pTile, bTestEnabled);
-            else if (pTile.getHeight() == infos().Globals.MOUNTAIN_HEIGHT)
+            else if (pTile.getHeight() == infos().getType<HeightType>("HEIGHT_MOUNTAIN"))
             {
                 //mountaineer code
                 if (!(info().mbAnchor))
@@ -76,8 +76,8 @@ namespace DynamicUnits
 
             ReleasePool<List<int>>.AcquireScope acquireScope = CollectionCache.GetListScoped<int>();
             List<int> value = acquireScope.Value;
-            if (tile().getHeight() == infos().Globals.MOUNTAIN_HEIGHT)
-                pFromTile.getContiguous((Tile tile) => tile.getHeight() == infos().Globals.MOUNTAIN_HEIGHT && tile.distanceTile(pFromTile) <= waterControl(), value);
+            if (tile().getHeight() == infos().getType<HeightType>("HEIGHT_MOUNTAIN"))
+                pFromTile.getContiguous((Tile tile) => tile.getHeight() == infos().getType<HeightType>("HEIGHT_MOUNTAIN") && tile.distanceTile(pFromTile) <= waterControl(), value);
             else 
                 pFromTile.getContiguous((Tile tile) => tile.isWater() && tile.distanceTile(pFromTile) <= waterControl(), value);
             foreach (int item in value)
@@ -113,7 +113,9 @@ namespace DynamicUnits
 
         public override int getHPMax()
         {
-            return info().miHPMax + (getLevel()-1)*2;
+            if (string.IsNullOrEmpty(getModVariable("CURR_MORALE"))) //no dynamic battlefield
+                return info().miHPMax + (getLevel()-1)*2;
+            else return info().miHPMax;
         }
         public override int attackValue(AttackType eAttack)
         {

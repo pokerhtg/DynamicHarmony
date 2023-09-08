@@ -77,7 +77,7 @@ namespace dynamicHarmony
                 }
                 return -1;
             }
-            public static bool isCharge(Unit unit, out Tile impactFrom, Tile pFromTile=null, Tile pToTile=null )
+            public static bool isCharge(Unit unit, out Tile impactFrom, Tile pFromTile=null, Tile pToTile=null)
             {
                 ///TODO: use attack value's Value from xml...to denote the max charge distance? Right now all charges are defined to have range of exactly 2
                 impactFrom = null;
@@ -91,7 +91,7 @@ namespace dynamicHarmony
                 if (chargeIndex > -1)
                     foreach (EffectUnitType eLoopEffectUnit in unit.getEffectUnits())
                     {
-                        int iSubValue = info.effectUnit(eLoopEffectUnit).maiAttackValue[chargeIndex];
+                        int iSubValue = info.effectUnit(eLoopEffectUnit)?.maiAttackValue[chargeIndex] ?? 0;
                         if (iSubValue != 0)
                         {
                             isCharge = true;
@@ -108,9 +108,8 @@ namespace dynamicHarmony
                     pToTile.getAliveUnits(enemies);
 
                     if (!pToTile.hasCity() && enemies.Count == 1 && ((pToTile.improvement()?.miDefenseModifier?? 0) < 1) && pFromTile.distanceTile(pToTile) == 2 //here's that "2" referred to in the TODO above
-                        && pToTile.defendingUnit().movement() > 0 && pToTile.canUnitPass(unit.getType(), unit.getPlayer(), unit.getTribe(), unit.getTeam(), false, true))
+                        && (pToTile.defendingUnit()?.movement() ?? -1) > 0 && pToTile.canUnitPass(unit.getType(), unit.getPlayer(), unit.getTribe(), unit.getTeam(), false, true))
                     {
-                       
                         List<int> adjTiles = new List<int>();
                         pFromTile.getTilesAtDistance(1, adjTiles, false);
                         Tile candidate1 = null, candidate2 =null;
@@ -381,7 +380,7 @@ namespace dynamicHarmony
                 Game g = __instance.game();
                 Infos info = g.infos();
                 var pToUnit = pToTile.defendingUnit(); 
-                if (pToUnit == null) //something is wrong. abort, abort!
+                if (pToUnit == null) //something went wrong. abort, abort!
                     return; 
                 if (isKite == getSpecialMove(__instance.getEffectUnits(), info, out _) && !__instance.isFatigued() && !__instance.isMarch())
                 {
@@ -397,7 +396,6 @@ namespace dynamicHarmony
                 }
                 if (isCharge(__instance, out Tile impactFrom, pFromTile, pToTile))
                 {
-                   // MohawkAssert.Assert(false, "charging");
                     List<TileText> azTileTexts2 = new List<TileText>();
                     g.addTileTextAllPlayers(ref azTileTexts2, impactFrom.getID(), () => "Charge");
                    
@@ -477,13 +475,11 @@ namespace dynamicHarmony
             }
 
             private static void SendTileTextAll(string v, int tileID, Game g)
-            {
-                
+            {              
                 for (PlayerType playerType = (PlayerType)0; playerType < g.getNumPlayers(); playerType++)
                 {
                     g.sendTileText(new TileText(v, tileID, playerType));
                 }
-
             }
 
             [HarmonyPatch(nameof(Unit.attackUnitOrCity), new Type[] { typeof(Tile), typeof(Player) })]
@@ -666,13 +662,13 @@ namespace dynamicHarmony
                     ___retreatValueDelegate = new Func<Tile, long>(__instance.retreatTileValue);
                 
                 if (PatchUnitBehaviors.getSpecialMove(___unit.getEffectUnits(), ___game.infos(), out _) == isKite && !___unit.isFatigued() && ___unit.getCooldown() == ___game.infos().Globals.ATTACK_COOLDOWN)
-                doMoveToBestTile(__instance, pPathfinder, ___unit.getStepsToFatigue(), false, null, ___retreatValueDelegate); 
+                doMoveToBestTile(__instance, pPathfinder, ___unit.getStepsToFatigue(), null, ___retreatValueDelegate); 
             }
          
 
             [HarmonyReversePatch]
             [HarmonyPatch("doMoveToBestTile")]
-            public static bool doMoveToBestTile(Unit.UnitAI ai, PathFinder pPathfinder, int iMaxSteps, bool bSafe, Predicate<Tile> tileValid, Func<Tile, long> tileValue)
+            public static bool doMoveToBestTile(Unit.UnitAI ai, PathFinder pPathfinder, int iMaxSteps, Predicate<Tile> tileValid, Func<Tile, long> tileValue)
             {
                 throw new NotImplementedException("It's a stub");
             }

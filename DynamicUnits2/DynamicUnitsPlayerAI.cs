@@ -1,4 +1,5 @@
-﻿using TenCrowns.GameCore;
+﻿using System;
+using TenCrowns.GameCore;
 using UnityEngine;
 
 namespace DynamicUnits
@@ -61,7 +62,7 @@ namespace DynamicUnits
         public override long getFortValue(ImprovementType eImprovement, Tile pTile)
         {
             //defense structures aren't that important
-            return base.getFortValue(eImprovement, pTile)/3;  
+            return base.getFortValue(eImprovement, pTile)/2;  
         }
         protected override long calculateUnitValue(UnitType eUnit)
         {
@@ -79,6 +80,7 @@ namespace DynamicUnits
                 chance -= desire / 20; //desire is between -200 and 0; so this increases chance by up to 10% 
            
             chance += player.getOrdersLeft() / 10 - player.countTeamWars() * 3; //for every 30 orders, AI wants to be in 1 war, at a rate of 1% of 10 order of exccess 
+            chance = infos.utils().range(chance, 0, 30);
             return chance;
         }
     }
