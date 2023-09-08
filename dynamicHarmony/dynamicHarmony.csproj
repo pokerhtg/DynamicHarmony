@@ -59,6 +59,10 @@
     <Reference Include="UnityEngine">
       <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorld\OldWorld_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorldTestBranch\OldWorld_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DynamicHarmony.cs" />

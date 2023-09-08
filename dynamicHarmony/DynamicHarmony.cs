@@ -2,6 +2,7 @@
 using TenCrowns.AppCore;
 using TenCrowns.GameCore;
 using System;
+using UnityEngine;
 using System.Collections.Generic;
 using Mohawk.SystemCore;
 using TenCrowns.GameCore.Text;
@@ -18,6 +19,8 @@ namespace dynamicHarmony
     {
         public const string MY_HARMONY_ID = "harry.DynamicHarmony.patch";
         public static Harmony harmony;
+        public static bool debug = true;
+        public static EffectUnitType retreat = EffectUnitType.NONE;
 
         public override void Initialize(ModSettings modSettings)
         {
@@ -42,7 +45,7 @@ namespace dynamicHarmony
         [HarmonyPatch(typeof(Unit))]
         public class PatchUnitBehaviors
         {
-            static EffectUnitType specialEffect = EffectUnitType.NONE;
+           
             /// <summary>
             /// main utility method identifying the type of special movement rules, if any
             /// </summary>
@@ -53,7 +56,7 @@ namespace dynamicHarmony
             public static int getSpecialMove(ReadOnlyList<EffectUnitType> effectUnitTypes, Infos info, out EffectUnitType eff)
             {
                 int index = AttackIndex("MOVE_SPECIAL", info);
-                eff = specialEffect;
+                eff = EffectUnitType.NONE;
                 
                 if (index > -1)
                     foreach (EffectUnitType eLoopEffectUnit in effectUnitTypes)
@@ -62,7 +65,7 @@ namespace dynamicHarmony
                         if (iSubValue != 0)
                         {
                             eff = eLoopEffectUnit;
-                            specialEffect = eff;
+                           
                             return iSubValue;
                         }
                     }
@@ -186,13 +189,13 @@ namespace dynamicHarmony
                         Unit pLoopUnit = __instance.game().unit(iLoopUnit);
                         if (getSpecialMove(pLoopUnit.getEffectUnits(), __instance.game().infos(), out _) != isSkirmisher)
                         {
-                            return; //false
+                            return; //false, no push
                         }              
                     }
                 }
                 if (!pToTile.isTileAdjacent(__instance.tile()))
                     return;
-                __result = true; //if all units in the target tile are retreating, hasPush = true;
+                __result = true; //if all units in the target tile are retreating, hasPush = true
             }
 
             [HarmonyPatch(nameof(Unit.getPushTile))]
@@ -292,7 +295,11 @@ namespace dynamicHarmony
                                     }
                                     //then damage anyway. AKA friendly fire
                                     else
+                                    { 
                                         __result = pFromUnit.attackUnitDamage(pFromTile, __instance, false, pFromUnit.attackPercent(eLoopAttack));
+                                        if (__result >= __instance.getHP())
+                                            __result = __instance.getHP() -1; //friendly fire is now no longer deadly
+                                    }
                                 }
                             }
                         }
@@ -309,9 +316,9 @@ namespace dynamicHarmony
                 var pToTile = __instance.tile();
                 var g = __instance.game();
                 EffectUnitType defenderEffect, attackerEffect;
-                int specialMoveCodeDefender = getSpecialMove(__instance.getEffectUnits(), g.infos(), out defenderEffect);
+
                 int specialMoveCodeAttacker = getSpecialMove(pFromUnit.getEffectUnits(), g.infos(), out attackerEffect);
-                bool bSkirmish = isSkirmisher == specialMoveCodeDefender;
+
                 bool bKite = isKite == specialMoveCodeAttacker;
                 bool special = false;
 
@@ -323,25 +330,23 @@ namespace dynamicHarmony
                     special = true; //Special!
                 }
 
-                if (bSkirmish)
+              
+                if (isSkirmishing(pFromUnit, pFromTile, __instance, out defenderEffect)) 
                 {
-                    if (__instance.attackDamagePreview(pFromUnit, pFromTile, pFromUnit.player()) < __instance.getHP() // not dead
-                        && pFromUnit.canAttackUnitOrCity(pFromTile, pToTile, null) && pFromTile.isTileAdjacent(pToTile) && !pToTile.hasCity() && (pToTile.improvement()?.miDefenseModifier ?? 0) < 1) //skirmish condition: getting hit, adj, and not special tile
+                    //Special!
+                    if (pFromUnit.getPushTile(__instance, pFromTile, pToTile) == null)
+                        builder.AddTEXT("TEXT_CONCEPT_STUN");
+                    else
                     {
-                        //Special!
-                        if (pFromUnit.getPushTile(__instance, pFromTile, pToTile) == null)
+                        builder.AddTEXT(g.HelpText.getGenderedEffectUnitName(g.infos().effectUnit(defenderEffect), pFromUnit.getGender()));
+                        if (pFromUnit.hasStun(pToTile))
                             builder.AddTEXT("TEXT_CONCEPT_STUN");
-                        else
-                        {
-                            builder.AddTEXT(g.HelpText.getGenderedEffectUnitName(g.infos().effectUnit(defenderEffect), pFromUnit.getGender()));
-                            if (pFromUnit.hasStun(pToTile))
-                                builder.AddTEXT("TEXT_CONCEPT_STUN");
-                        }
-
-                        __result = builder;
-                        special = true;
                     }
+
+                    __result = builder;
+                    special = true;
                 }
+                
                 if (bKite)
                 {
                     if (__instance.attackDamagePreview(pFromUnit, pFromTile, pFromUnit.player()) >= __instance.getHP() && //dead
@@ -364,15 +369,30 @@ namespace dynamicHarmony
                 return !special;
             }
 
+          
+            private static bool isSkirmishing(Unit pFromUnit, Tile pFromTile, Unit target, out EffectUnitType why)
+            {
+                var pToTile = target.tile();
+                MohawkAssert.Assert(false, pFromUnit + " can cause skirmish of " + target + "?");
+                int specialMoveCodeDefender = getSpecialMove(target.getEffectUnits(), target.game().infos(), out why);
+               
+                return isSkirmisher == specialMoveCodeDefender && //has this type of special move
+                target.attackDamagePreview(pFromUnit, pFromTile, pFromUnit.player()) < target.getHP() // and not dead
+                        && pFromUnit.canAttackUnitOrCity(pFromTile, pToTile, null) && pFromTile.isTileAdjacent(pToTile) 
+                        && !pToTile.hasCity() && (pToTile.improvement()?.miDefenseModifier ?? 0) < 1;   //skirmish condition: getting hit, adj, and not special tile
+            }
+
             [HarmonyPatch(nameof(Unit.attackUnitOrCity), new Type[] { typeof(Tile), typeof(Player) })]
-            ///for Kite and friendly fire; defines what can be attacked, and what effect pop up texts to display
+            ///for Kite, skirmisher and friendly fire; defines what can be attacked, and what effect pop up texts to display
             /// also for Charge, so to handle the unit jumping and defender scattering
             /// should update attack damage preview and/or attack effect preview to match logic every time this changes; consider refactor
             static void Prefix(ref Unit __instance, ref Tile pToTile, Player pActingPlayer, out bool __state)
             {
                 Tile pFromTile = __instance.tile();
                 List<TileText> azTileTexts = new List<TileText>();
-
+                if (debug)
+                    Debug.Log("debug trace: entering harmony's AttackUnitorCity prefix");
+             
                 List<int> aiAdditionalDefendingUnits = new List<int>();
                 List<Unit.AttackOutcome> outcomes = new List<Unit.AttackOutcome>();
                 int cityHP = -1;
@@ -384,6 +404,8 @@ namespace dynamicHarmony
                     return; 
                 if (isKite == getSpecialMove(__instance.getEffectUnits(), info, out _) && !__instance.isFatigued() && !__instance.isMarch())
                 {
+                    if (debug)
+                        Debug.Log("debug trace: entering harmony's AttackUnitorCity kite");
                     if (pToUnit.attackDamagePreview(__instance, pFromTile, __instance.player()) >= pToUnit.getHP() && //dead
                        __instance.canAdvanceAfterAttack(pFromTile, pToTile, pToUnit, true)) //and routing
                     {
@@ -396,6 +418,8 @@ namespace dynamicHarmony
                 }
                 if (isCharge(__instance, out Tile impactFrom, pFromTile, pToTile))
                 {
+                    if (debug)
+                        Debug.Log("debug trace: entering harmony's AttackUnitorCity charge");
                     List<TileText> azTileTexts2 = new List<TileText>();
                     g.addTileTextAllPlayers(ref azTileTexts2, impactFrom.getID(), () => "Charge");
                    
@@ -404,11 +428,11 @@ namespace dynamicHarmony
                         miUnitID = __instance.getID(),
                         meType = UnitActionType.MOVE,
                         maiTiles = new List<int>
-                                    {
-                                        pFromTile.getID(),
-                                        impactFrom.getID(),  
-                                        pToTile.getID(),
-                                    },
+                        {
+                            pFromTile.getID(),
+                            impactFrom.getID(),  
+                            pToTile.getID(),
+                        },
                         maTileTexts = azTileTexts2,
                         meActingPlayer = pActingPlayer?.getPlayer() ?? PlayerType.NONE
                     };
@@ -416,11 +440,18 @@ namespace dynamicHarmony
                    
                     setTileID(__instance, impactFrom.getID());
                     __state = true;
-                
+                }
+                if (isSkirmishing(__instance, pFromTile, pToUnit, out EffectUnitType why))
+                {
+                    if (debug)
+                        Debug.Log("debug trace: entering harmony's AttackUnitorCity skirmishing");
+                    
+                   retreat = why;
                 }
                 //look for friendly fire
                 for (AttackType eLoopAttack = 0; eLoopAttack < info.attacksNum(); eLoopAttack++)
                 {
+                    
                     int iValue = __instance.attackValue(eLoopAttack);
                     if (iValue <= 0)
                         continue;
@@ -431,17 +462,17 @@ namespace dynamicHarmony
                         foreach (int iLoopTile in tilesScoped.Value)
                         {
                             Tile pLoopTile = g.tile(iLoopTile);
-
+                           
                             if (__instance.canDamageUnitOrCity(pLoopTile, true)) //if this tile can be damaged, then original code will handle it
                                 continue;
                             if (pLoopTile == pFromTile) //disable friendly damage on self
                                 continue; 
                             int percent = __instance.attackPercent(eLoopAttack);
                             Unit pLoopDefendingUnit = pLoopTile.defendingUnit();
-                            if (pLoopDefendingUnit == null)
+                            if (pLoopDefendingUnit == null || percent < 1)
                                 continue;
-                            if (percent < 1)
-                                continue;
+                            if (debug)
+                                Debug.Log("debug trace: doing harmony's AttackUnitorCity friendly fire's loop");
                             int dmg = 0;
                             if (pLoopTile.hasCity())
                             {
@@ -460,8 +491,8 @@ namespace dynamicHarmony
                                 dmg = __instance.attackUnitDamage(pFromTile, pLoopDefendingUnit, false, percent);
                                 if (dmg < 1)
                                     continue;
-                                pLoopDefendingUnit.changeDamage(dmg, false);                            
-                                outcomes.Add(pLoopDefendingUnit.getHP() == 0 ? Unit.AttackOutcome.KILL : Unit.AttackOutcome.NORMAL);
+                                pLoopDefendingUnit.changeDamage(dmg, true); //friendly fire never kills
+                                outcomes.Add(Unit.AttackOutcome.NORMAL);
                              }
 
                             g.addTileTextAllPlayers(ref azTileTexts, pLoopTile.getID(), () => "-" + dmg + " HP");
@@ -469,19 +500,25 @@ namespace dynamicHarmony
                     }
                 }
                 if (azTileTexts.Count != 0)
-                {                  
+                {
+                    if (debug) { 
+                        Debug.Log("debug trace: entering harmony's AttackUnitorCity printing " + azTileTexts.Count + " texts");
+                        for (int i = 0; i < azTileTexts.Count; i++)
+                            Debug.Log(azTileTexts[i].mzText + " for player " + azTileTexts[i].mePlayer);
+                    }
                     g.sendUnitBattleAction(__instance, null, pFromTile, pToTile, pToTile, Unit.AttackOutcome.NORMAL, azTileTexts, pActingPlayer?.getPlayer() ?? PlayerType.NONE, cityHP > 0, cityHP, aiAdditionalDefendingUnits, outcomes);
                 }
             }
-
+          
             private static void SendTileTextAll(string v, int tileID, Game g)
             {              
                 for (PlayerType playerType = (PlayerType)0; playerType < g.getNumPlayers(); playerType++)
                 {
+                  
                     g.sendTileText(new TileText(v, tileID, playerType));
                 }
             }
-
+            
             [HarmonyPatch(nameof(Unit.attackUnitOrCity), new Type[] { typeof(Tile), typeof(Player) })]
             /// for Charge, __state represents mid-charging action. We want to set tile as the last thing
             static void Postfix(ref Unit __instance, Tile pToTile, Player pActingPlayer, bool __state)
@@ -506,7 +543,7 @@ namespace dynamicHarmony
 
                 setTileID(__instance, pToTile.getID());
             }
-
+            
             [HarmonyPatch(nameof(Unit.canActMove), new Type[] { typeof(Player), typeof(int), typeof(bool) })]
             // Player pActingPlayer, int iMoves = 1, bool bAssumeMarch = false)
             ///for Kite
@@ -713,28 +750,37 @@ namespace dynamicHarmony
                 return true;
             }
         } //PatchAI
-
         [HarmonyPatch(typeof(Infos))]
         public class PatchInfos
         {
             [HarmonyPatch(nameof(Infos.effectUnit))]
-            ///for skirmisher; a bit hacky
-            static bool Prefix(ref InfoEffectUnit __result, ref List<InfoEffectUnit> ___maEffectUnits, ref EffectUnitType eIndex)
+            ///NOTE this is hacky, may not always work...
+            static bool Prefix(ref Infos __instance, ref InfoEffectUnit __result, ref List<InfoEffectUnit> ___maEffectUnits, ref EffectUnitType eIndex)
             {
                 //NOTE this is used when looking for an effect to explain hasPush but none was found; we can explain it on Skirmisher. This method could have side effects
+
                 if (eIndex < 0)
-                    foreach (var effect in ___maEffectUnits)
+                {
+                    if (retreat != EffectUnitType.NONE) //so we queued up a reason for the retreat in prefix of attackUnitOrCity; 
                     {
-                        if (effect.mzType.Equals("EFFECTUNIT_SKIRMISHER"))
-                        {
-                            __result = effect;
-                            return false;
-                        }
+                        __result = __instance.effectUnit(retreat);
+                        retreat = EffectUnitType.NONE; //do we need to clear it out? Multithread considerations...
+                        return false;
                     }
+                    else
+                        foreach (var effect in ___maEffectUnits)
+                        {
+                            if (effect.mzType.Equals("EFFECTUNIT_BLANK"))
+                            {
+                                __result = effect;
+                                return false;
+                            }
+                        }
+                }
                 return true;
             }
         }
-
+       
         [HarmonyPatch(typeof(HelpText))]
         public class PatchHelpText
         {
