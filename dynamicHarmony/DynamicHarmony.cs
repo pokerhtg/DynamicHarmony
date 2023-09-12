@@ -19,7 +19,7 @@ namespace dynamicHarmony
     {
         public const string MY_HARMONY_ID = "harry.DynamicHarmony.patch";
         public static Harmony harmony;
-        public static bool debug = true;
+        public static bool debug = false;
         public static EffectUnitType retreat = EffectUnitType.NONE;
 
         public override void Initialize(ModSettings modSettings)
@@ -267,35 +267,37 @@ namespace dynamicHarmony
             {
                 if (!bCheckHostile)
                     return;
-                if (pFromUnit == null)
+                Game g = __instance.game();
+                if (pFromUnit == null || g.isHostileUnitUnit(pFromUnit, __instance))
                     return;
-                if (!pMouseoverTile.hasHostileUnit(pFromUnit.getTeam()))
+                if (!pFromUnit.canTargetTile(pMouseoverTile))
                     return;
-                for (AttackType eLoopAttack = 0; eLoopAttack < __instance.game().infos().attacksNum(); eLoopAttack++)
+                
+                for (AttackType eLoopAttack = 0; eLoopAttack < g.infos().attacksNum(); eLoopAttack++)
                 {
                     int iValue = pFromUnit.attackValue(eLoopAttack);
                     if (iValue > 0)
                     {
                         using (var tilesScoped = CollectionCache.GetListScoped<int>())
                         {
+                            Tile ownTile = __instance.tile();
                             Tile pFromTile = pFromUnit.tile();
-                            Tile pTile = __instance.tile();
-
+                            
                             pFromTile.getAttackTiles(tilesScoped.Value, pMouseoverTile, pFromUnit.getType(), eLoopAttack, iValue);
                             foreach (int iLoopTile in tilesScoped.Value)
                             {
-                                Tile pLoopTile = __instance.game().tile(iLoopTile);
-                                if (pFromTile == pLoopTile)
+                                Tile potentialTargetTile = g.tile(iLoopTile);
+                                if (pFromTile == potentialTargetTile)
                                     continue; //for now, let's disble friendly fire on self
-                                if (pLoopTile == pTile)
+                                if (potentialTargetTile == ownTile)
                                 {
-                                    if (pLoopTile.hasCity())
+                                    if (potentialTargetTile.hasCity())
                                     {
-                                     //   __result = pFromUnit.attackCityDamage(pFromTile, pLoopTile.city(), pFromUnit.attackPercent(eLoopAttack), false);
+                                     //   __result = pFromUnit.attackCityDamage(pFromTile, potentialTargetTile.city(), pFromUnit.attackPercent(eLoopAttack), false);
                                     }
                                     //then damage anyway. AKA friendly fire
                                     else
-                                    { 
+                                    {
                                         __result = pFromUnit.attackUnitDamage(pFromTile, __instance, false, pFromUnit.attackPercent(eLoopAttack));
                                         if (__result >= __instance.getHP())
                                             __result = __instance.getHP() -1; //friendly fire is now no longer deadly
@@ -373,7 +375,8 @@ namespace dynamicHarmony
             private static bool isSkirmishing(Unit pFromUnit, Tile pFromTile, Unit target, out EffectUnitType why)
             {
                 var pToTile = target.tile();
-                MohawkAssert.Assert(false, pFromUnit + " can cause skirmish of " + target + "?");
+                if (debug)
+                    MohawkAssert.Assert(false, pFromUnit + " can cause skirmish of " + target + "?");
                 int specialMoveCodeDefender = getSpecialMove(target.getEffectUnits(), target.game().infos(), out why);
                
                 return isSkirmisher == specialMoveCodeDefender && //has this type of special move
@@ -400,7 +403,7 @@ namespace dynamicHarmony
                 Game g = __instance.game();
                 Infos info = g.infos();
                 var pToUnit = pToTile.defendingUnit(); 
-                if (pToUnit == null) //something went wrong. abort, abort!
+                if (pToUnit == null || pToUnit == __instance) //something went wrong. abort, abort!
                     return; 
                 if (isKite == getSpecialMove(__instance.getEffectUnits(), info, out _) && !__instance.isFatigued() && !__instance.isMarch())
                 {
@@ -839,7 +842,7 @@ namespace dynamicHarmony
             static Tile phantom;
             static int phantomDelay = 0;
             [HarmonyPatch(typeof(ClientInput), nameof(ClientInput.moveTo))]
-            // public virtual void moveTo(Unit pUnit, Tile pTile)
+            // public virtual void moveTo(Unit pUnit, Tile ownTile)
             ///outside of gamecore, so be very careful here. Client level g logic control in base g...tsk tsk. Changing it to make Kiting work
             static bool Prefix(ref IApplication ___APP, Unit pUnit, Tile pTile)
             {

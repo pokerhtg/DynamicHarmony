@@ -120,6 +120,11 @@ namespace DynamicUnits
             return cost;
         }
 
+        internal int countNumSettlers()
+        {
+           return countUnits((x) => x.info().mbFound);
+        }
+
         //how this AI perceives their warscore is, biased from reality
         public int desirePeace(PlayerType other)
         {

@@ -68,10 +68,16 @@ namespace DynamicUnits
         {
             //inmobile units worth less
             long val = base.calculateUnitValue(eUnit);
+            if (isSettler(eUnit))
+            {
+                val *= 2;
+                val /= (1 + ((DynamicUnitsPlayer) player).countNumSettlers());
+                
+            }
             return infos.unit(eUnit).miMovement < 1 ? val / 8: val;
         }
 
-        public override int getWarOfferPercent(PlayerType eOtherPlayer, bool bDeclare)
+    public override int getWarOfferPercent(PlayerType eOtherPlayer, bool bDeclare)
         {
             
             int chance = base.getWarOfferPercent(eOtherPlayer, bDeclare);
