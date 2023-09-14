@@ -12,7 +12,8 @@ namespace DynamicUnits
         }
         protected override void postStart()
         {
-           foreach (InfoHeight h in infos().heights())
+            base.postStart();
+            foreach (InfoHeight h in infos().heights())
             {
                 if (h.mbImpassable && h.miMovementCost > 1)
                 {
@@ -20,19 +21,21 @@ namespace DynamicUnits
                     h.mbImpassable = false; 
                 }
             }
-           base.postStart();
+          
         }
         public override bool initFromMapScript(GameParameters pGameParams, MapBuilder pMapBuilder)
         {
-            foreach (InfoHeight h in infos().heights())
-            {
-                if (!h.mbImpassable && h.miMovementCost > 15)
+            bool success = base.initFromMapScript(pGameParams, pMapBuilder);
+            if (success)
+                foreach (InfoHeight h in infos().heights())
                 {
-                    //if your movement cost is high, treat it like inpassable for map gen
-                    h.mbImpassable = true;
+                    if (!h.mbImpassable && h.miMovementCost > 15)
+                    {
+                        //if your movement cost is high, treat it like inpassable for map gen
+                        h.mbImpassable = true;
+                    }
                 }
-            }
-            return base.initFromMapScript(pGameParams, pMapBuilder);
+            return success;
         }
 
         public override int getTeamWarScore(TeamType eIndex1, TeamType eIndex2)

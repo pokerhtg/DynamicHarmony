@@ -120,11 +120,6 @@ namespace DynamicUnits
             return cost;
         }
 
-        internal int countNumSettlers()
-        {
-           return countUnits((x) => x.info().mbFound);
-        }
-
         //how this AI perceives their warscore is, biased from reality
         public int desirePeace(PlayerType other)
         {
@@ -195,7 +190,7 @@ namespace DynamicUnits
             desireForPeace = infos().utils().range(desireForPeace, -200, 200);  
             return desireForPeace;
         }
-        protected override int calculateTotalStrength()
+        public override int calculateTotalStrength()
         {
             int strength = base.calculateTotalStrength();
             for (int i = 0; i < getNumUnits(); ++i)

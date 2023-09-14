@@ -53,6 +53,7 @@ namespace DynamicUnits
             }
             return false; 
         }
+     
         public override bool isHigherTileDefender(Unit pOtherUnit)
         {
             if (pOtherUnit == null)
@@ -89,6 +90,7 @@ namespace DynamicUnits
                 }
             }
         }
+     
         public override bool canMarchEver()
         {
             if (movement() < 0)

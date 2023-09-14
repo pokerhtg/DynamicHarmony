@@ -7,10 +7,10 @@ namespace DynamicUnits
     internal class DynamicUnitsPlayerAI : Player.PlayerAI
     {
         
-        public override void init(Game pGame, Player pPlayer)
+        public override void init(Game pGame, Player pPlayer, Tribe pTribe)
         {
             updateAIPriorities(pGame.randomNext(13));
-            base.init(pGame,pPlayer);
+            base.init(pGame,pPlayer, pTribe);
         }
         private void updateAIPriorities(int seed)
         {
@@ -71,7 +71,7 @@ namespace DynamicUnits
             if (isSettler(eUnit))
             {
                 val *= 2;
-                val /= (1 + ((DynamicUnitsPlayer) player).countNumSettlers());
+                val /= 1+ countUnits(IsSettlerDelegate);
                 
             }
             return infos.unit(eUnit).miMovement < 1 ? val / 8: val;
