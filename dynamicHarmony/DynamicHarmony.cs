@@ -265,40 +265,55 @@ namespace dynamicHarmony
             ///for friendly fire
             static void Postfix(ref int __result, Unit __instance, Unit pFromUnit, Tile pMouseoverTile, bool bCheckHostile)
             {
-                if (!bCheckHostile)
+                if (debug)
+                    Debug.Log("entering post attack preview");
+                if (!bCheckHostile || __result != 0)
                     return;
+              
                 Game g = __instance.game();
                 if (pFromUnit == null || g.isHostileUnitUnit(pFromUnit, __instance))
                     return;
-                if (!pFromUnit.canTargetTile(pMouseoverTile))
+                Tile ownTile = __instance.tile();
+                Tile pFromTile = pFromUnit.tile();
+
+                if (pMouseoverTile == null || pMouseoverTile.defendingUnit() == null || !pFromUnit.canTargetTile(pMouseoverTile))
                     return;
-                
+               
                 for (AttackType eLoopAttack = 0; eLoopAttack < g.infos().attacksNum(); eLoopAttack++)
                 {
                     int iValue = pFromUnit.attackValue(eLoopAttack);
                     if (iValue > 0)
                     {
+                        if (debug)
+                            Debug.Log("can attack " + eLoopAttack + " with a power of " + iValue);
                         using (var tilesScoped = CollectionCache.GetListScoped<int>())
-                        {
-                            Tile ownTile = __instance.tile();
-                            Tile pFromTile = pFromUnit.tile();
-                            
+                        {        
                             pFromTile.getAttackTiles(tilesScoped.Value, pMouseoverTile, pFromUnit.getType(), eLoopAttack, iValue);
+                            if (debug)
+                                Debug.Log(String.Format("found {0} tiles. mouseover: ({1}, {2})",tilesScoped.Value.Count, pMouseoverTile.getX(), pMouseoverTile.getY()));
                             foreach (int iLoopTile in tilesScoped.Value)
                             {
                                 Tile potentialTargetTile = g.tile(iLoopTile);
-                                if (pFromTile == potentialTargetTile)
+                                if (debug)
+                                   Debug.Log(String.Format("({2}, {3}) is considering the impact of attacking ({0}, {1})", potentialTargetTile.getX(), potentialTargetTile.getY(), ownTile.getX(), ownTile.getY()));
+
+                                if (pFromTile == potentialTargetTile) 
+                                { 
                                     continue; //for now, let's disble friendly fire on self
+                                }
                                 if (potentialTargetTile == ownTile)
                                 {
-                                    if (potentialTargetTile.hasCity())
+                                    if (debug)
+                                        Debug.Log("I'm hit!!");
+
+                                    if (ownTile.hasCity())
                                     {
                                      //   __result = pFromUnit.attackCityDamage(pFromTile, potentialTargetTile.city(), pFromUnit.attackPercent(eLoopAttack), false);
                                     }
                                     //then damage anyway. AKA friendly fire
                                     else
                                     {
-                                        __result = pFromUnit.attackUnitDamage(pFromTile, __instance, false, pFromUnit.attackPercent(eLoopAttack));
+                                        __result += pFromUnit.attackUnitDamage(pFromTile, __instance, false, pFromUnit.attackPercent(eLoopAttack), bCheckOurUnits:false);
                                         if (__result >= __instance.getHP())
                                             __result = __instance.getHP() -1; //friendly fire is now no longer deadly
                                     }

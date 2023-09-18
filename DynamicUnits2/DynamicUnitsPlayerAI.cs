@@ -19,7 +19,7 @@ namespace DynamicUnits
             AI_GROWTH_VALUE -= offset;
             AI_CULTURE_VALUE = 30 + offset;
             AI_HAPPINESS_VALUE -= 5 * offset;
-            AI_ORDERS_VALUE /= 2;
+            AI_ORDERS_VALUE += 10 * offset;
             AI_MONEY_VALUE = 7 + offset;
             AI_TRAINING_VALUE -= offset;
             AI_GOODS_VALUE = AI_MONEY_VALUE * 5 - offset;
@@ -33,7 +33,7 @@ namespace DynamicUnits
             AI_UNIT_LEVEL_VALUE *= 2;
             AI_UNIT_PUSH_VALUE *= 2;
             AI_UNIT_ROUT_VALUE *= 2;
-            AI_ENLIST_ON_KILL_VALUE *= 3;
+            AI_ENLIST_ON_KILL_VALUE *= 2;
             AI_UNIT_LAST_STAND_VALUE *= 2;
             AI_UNIT_FORTIFY_VALUE = 100;
             AI_UNIT_PROMOTE_VALUE *= 2;
@@ -47,10 +47,8 @@ namespace DynamicUnits
             AI_BUILD_URBAN_VALUE *= 4;
             AI_IDLE_XP_VALUE /= 2;
             AI_CITY_REBEL_VALUE /= 3;
-            AI_MAX_NUM_WORKERS_PER_HUNDRED_CITIES = 200;
             AI_WASTED_EFFECT_VALUE = -offset;
             AI_MAX_FORT_BORDER_DISTANCE_INSIDE = 2;
-
         }
        
         protected override bool isFoundCitySafe(Tile pTile)
@@ -86,7 +84,8 @@ namespace DynamicUnits
                 chance -= desire / 20; //desire is between -200 and 0; so this increases chance by up to 10% 
            
             chance += player.getOrdersLeft() / 10 - player.countTeamWars() * 3; //for every 30 orders, AI wants to be in 1 war, at a rate of 1% of 10 order of exccess 
-            chance = infos.utils().range(chance, 0, 30);
+            chance += countUnits(IsSettlerDelegate);
+            chance = infos.utils().range(chance, 0, 35);
             return chance;
         }
     }

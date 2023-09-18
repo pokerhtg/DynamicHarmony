@@ -31,8 +31,8 @@ namespace DynamicUnits
         {
             if (game().getTurn() < 2 && semipassable()) //at the beginning of the game, mountains are considered impassable--to help map gen
                 return true;
-            
-             return mpCurrentData.mTileData.isImpassable(infos());
+
+            return mpCurrentData.mTileData.isImpassable(infos());
             
         }
         public override bool canUnitPass(UnitType eUnit, PlayerType ePlayer, TribeType eTribe, TeamType eVisibilityTeam, bool bTestHostileBlocking, bool bTestTerritory)
@@ -80,7 +80,7 @@ namespace DynamicUnits
                     return true;
             return base.canBothUnitsOccupy(eUnit, ePlayer, pOtherUnit); 
         }
-  
+
         public override bool canUnitOccupy(Unit pUnit, TeamType eVisibilityTeam, bool bTestTheirUnits, bool bTestOurUnits, bool bFinalMoveTile)
         {
             if (pUnit.movement() < 1)
