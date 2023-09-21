@@ -1,4 +1,7 @@
-﻿using TenCrowns.GameCore;
+﻿using Mohawk.UIInterfaces;
+using System;
+using TenCrowns.ClientCore;
+using TenCrowns.GameCore;
 using TenCrowns.GameCore.Text;
 
 namespace DynamicUnits
@@ -17,6 +20,21 @@ namespace DynamicUnits
               builder.AddTEXT("TEXT_HELPTEXT_MOUNTAIN_TRAVERSAL");
             }
             return result;
+        }
+
+        public override TextBuilder buildTechHelp(TextBuilder builder, TechType eTech, Player pPlayer, ClientManager pManager, bool bHelp = false)
+        {
+            var output = base.buildTechHelp(builder, eTech, pPlayer, pManager, bHelp);
+            try
+            {
+                ((DynamicUnitsPlayer)pPlayer).diffusedTechCost(eTech, out var why);
+                TextVariable value = buildColorTextSignedVariable(why[3], true);
+                output.AddTEXT("TEXT_HELP_DIFUSED_TECH_COST", why[0], why[1], why[2], value);
+            }
+            catch(Exception)
+            { }
+            return output;
+            
         }
     }
 }

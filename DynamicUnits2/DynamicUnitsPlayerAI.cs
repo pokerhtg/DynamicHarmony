@@ -24,10 +24,10 @@ namespace DynamicUnits
             AI_TRAINING_VALUE -= offset;
             AI_GOODS_VALUE = AI_MONEY_VALUE * 5 - offset;
             AI_MONEY_STOCKPILE_TURNS /= 2;
-            AI_NUM_GOODS_TARGET = 200 * offset;
+            AI_NUM_GOODS_TARGET = 700 + 100 * offset;
             AI_TURNS_BETWEEN_KILLS += offset;
             AI_CHARACTER_OPINION_VALUE *= 2;
-            AI_NO_WONDER_TURNS = 5 + offset * 2;
+            AI_NO_WONDER_TURNS = 10 + offset * 2;
             AI_WONDER_VALUE -= 50 * (13 - offset);
             AI_VP_VALUE /= 2;
             AI_UNIT_LEVEL_VALUE *= 2;
@@ -48,7 +48,7 @@ namespace DynamicUnits
             AI_IDLE_XP_VALUE /= 2;
             AI_CITY_REBEL_VALUE /= 3;
             AI_WASTED_EFFECT_VALUE = -offset;
-            AI_MAX_FORT_BORDER_DISTANCE_INSIDE = 2;
+            AI_MAX_FORT_BORDER_DISTANCE_INSIDE = 4;
         }
        
         protected override bool isFoundCitySafe(Tile pTile)

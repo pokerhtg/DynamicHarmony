@@ -1,5 +1,6 @@
 ﻿using Mohawk.SystemCore;
 using System;
+using System.Collections.Generic;
 using System.Text;
 using TenCrowns.GameCore;
 using TenCrowns.GameCore.Text;
@@ -10,6 +11,7 @@ namespace DynamicUnits
     internal class DynamicUnitsPlayer : Player
     {
         private int offset = 0;
+        static Dictionary<(int, TechType), (int, List<int>)> techCostCache;
         protected override void processTurn()
         {
 
@@ -54,7 +56,7 @@ namespace DynamicUnits
             if (capitalCity() == null)
                 return base.getTechCostWhole(eTech);
             else
-                return diffusedTechCost(eTech);
+                return diffusedTechCost(eTech, out _);
         }
         protected override void doEventTriggers()
         {
@@ -67,15 +69,27 @@ namespace DynamicUnits
                 doEventPlayer();
 
         }
-        private int diffusedTechCost(TechType eTech)
+    
+        public int diffusedTechCost(TechType eTech, out List<int> why)
         {
+            if (techCostCache == null)
+                techCostCache = new Dictionary<(int, TechType), (int, List<int>)>();
+
+            var key = (game().getTurn(), eTech);
+
+            if (techCostCache.TryGetValue(key, out (int, List<int>) cache))
+            {
+                why = cache.Item2;
+                return cache.Item1;
+            }
+
             int cost = infos().utils().modify(infos().tech(eTech).miCost, infos().Globals.TECH_GLOBAL_MODIFIER);
             int eligibleNations = 0;
-            const int MAXDISCOUNT = 95; //won't end up this high, thanks to integer divisions
+            const int MAXDISCOUNT = 90; //won't end up this high, thanks to integer divisions
             int knownNations = 0;
             int knownDist = 1;
             int totalDist = 1;
-
+            why = new List<int>();
             var capital = capitalCity().tile();
 
             for (PlayerType eLoopPlayer = 0; eLoopPlayer < game().getNumPlayers(); ++eLoopPlayer)
@@ -85,7 +99,7 @@ namespace DynamicUnits
                     continue;
 
                 var pCapital = p.capitalCity();
-
+                
                 if (pCapital == null)
                     continue;
 
@@ -104,7 +118,7 @@ namespace DynamicUnits
                 }
             }
 
-            int discount = MAXDISCOUNT * (1 + knownNations) * (totalDist - knownDist) / totalDist / (1 + eligibleNations);
+            int discount = MAXDISCOUNT * (1 + knownNations) * knownDist / totalDist / (1 + eligibleNations);
            
             if (knownNations == 0)
                 discount -= 20; //no one else knows? 20% more expensive!
@@ -115,8 +129,14 @@ namespace DynamicUnits
             if (eligibleNations == 0) //unique tech just for you
                 discount = (MAXDISCOUNT + discount) / 2;
 
-            cost = infos().utils().modify(cost, discount > MAXDISCOUNT? -MAXDISCOUNT: -discount, true);
+            why.Add(cost);
+            why.Add(knownNations);
+            why.Add(eligibleNations);    
+            why.Add(discount);
 
+            cost = infos().utils().modify(cost, discount > MAXDISCOUNT? -MAXDISCOUNT: -discount, true);
+            techCostCache.Add(key, (cost, why));
+           
             return cost;
         }
 

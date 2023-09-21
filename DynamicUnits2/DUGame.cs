@@ -18,7 +18,7 @@ namespace DynamicUnits
                 if (h.mbImpassable && h.miMovementCost > 1)
                 {
                     //if you have a movement cost, you aren't actually inpassable
-                  //  h.mbImpassable = false; 
+                    h.mbImpassable = false; 
                 }
             }
           
@@ -29,10 +29,10 @@ namespace DynamicUnits
             if (success)
                 foreach (InfoHeight h in infos().heights())
                 {
-                    if (!h.mbImpassable && h.miMovementCost > 15)
+                    if (h.miMovementCost > 15)
                     {
                         //if your movement cost is high, treat it like inpassable for map gen
-                 //       h.mbImpassable = true;
+                        h.mbImpassable = true;
                     }
                 }
             return success;
