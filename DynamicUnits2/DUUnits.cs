@@ -115,7 +115,7 @@ namespace DynamicUnits
 
         public override int getHPMax()
         {
-            if (string.IsNullOrEmpty(getModVariable("CURR_MORALE"))) //no dynamic battlefield
+            if (string.IsNullOrEmpty(getModVariable("CURR_REST_POINT_EXTRA")) || string.IsNullOrEmpty(getModVariable("CURR_MORALE"))) //no morale mod activated
                 return info().miHPMax + (getLevel()-1)*2;
             else return info().miHPMax;
         }
