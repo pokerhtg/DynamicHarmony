@@ -25,17 +25,16 @@ namespace DynamicUnits
         }
         public override bool initFromMapScript(GameParameters pGameParams, MapBuilder pMapBuilder)
         {
-            bool success = base.initFromMapScript(pGameParams, pMapBuilder);
-            if (success)
-                foreach (InfoHeight h in infos().heights())
+           
+            foreach (InfoHeight h in infos().heights())
+            {
+                if (h.miMovementCost > 15)
                 {
-                    if (h.miMovementCost > 15)
-                    {
-                        //if your movement cost is high, treat it like inpassable for map gen
-                        h.mbImpassable = true;
-                    }
+                    //if your movement cost is high, treat it like inpassable for map gen
+                    h.mbImpassable = true;
                 }
-            return success;
+            }
+            return base.initFromMapScript(pGameParams, pMapBuilder);
         }
 
         public override int getTeamWarScore(TeamType eIndex1, TeamType eIndex2)

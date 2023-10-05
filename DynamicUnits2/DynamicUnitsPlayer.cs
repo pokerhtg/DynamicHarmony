@@ -84,11 +84,14 @@ namespace DynamicUnits
             }
 
             int cost = infos().utils().modify(infos().tech(eTech).miCost, infos().Globals.TECH_GLOBAL_MODIFIER);
-            int eligibleNations = 0;
-            const int MAXDISCOUNT = 90; //won't end up this high, thanks to integer divisions
-            int knownNations = 0;
-            int knownDist = 1;
-            int totalDist = 1;
+            
+            const int MAXDISCOUNT = 90; //won't end up this high, thanks to integer division, plus the spooky phantom 1 tile away
+            
+            int distanceFactor = 0;
+            int knownNations = 0; 
+            int eligibleNations = 1;//a phantom! 
+            int totalDistFactor = 1;
+
             why = new List<int>();
             var capital = capitalCity().tile();
 
@@ -108,17 +111,17 @@ namespace DynamicUnits
                 if (p.isTechAcquired(eTech))
                 {
                     knownNations++;
-                    knownDist += dist;
+                    distanceFactor += 1000/dist;
                 }
 
                 if (p.isTechValid(eTech))
                 {
                     eligibleNations++;
-                    totalDist += dist;
+                    totalDistFactor += 1000/dist;
                 }
             }
 
-            int discount = MAXDISCOUNT * (1 + knownNations) * knownDist / totalDist / (1 + eligibleNations);
+            int discount = MAXDISCOUNT * knownNations * distanceFactor / totalDistFactor / eligibleNations;
            
             if (knownNations == 0)
                 discount -= 20; //no one else knows? 20% more expensive!
@@ -131,7 +134,7 @@ namespace DynamicUnits
 
             why.Add(cost);
             why.Add(knownNations);
-            why.Add(eligibleNations);    
+            why.Add(eligibleNations-1);     //let's not display the phantom to player...may spook them too much
             why.Add(discount);
 
             cost = infos().utils().modify(cost, discount > MAXDISCOUNT? -MAXDISCOUNT: -discount, true);
