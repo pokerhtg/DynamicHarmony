@@ -431,7 +431,7 @@ namespace dynamicHarmony
                 var pToUnit = pToTile.defendingUnit(); 
                 if (pToUnit == null || pToUnit == __instance) //something went wrong. abort, abort!
                     return; 
-                if (isKite == getSpecialMove(__instance.getEffectUnits(), info, out _) && !__instance.isFatigued() && !__instance.isMarch())
+                if (isKite == getSpecialMove(__instance.getEffectUnits(), info, out EffectUnitType hitNRunEff) && !__instance.isFatigued() && !__instance.isMarch())
                 {
                     if (debug)
                         Debug.Log("debug trace: entering harmony's AttackUnitorCity kite");
@@ -442,7 +442,8 @@ namespace dynamicHarmony
                     }
                     else
                     {
-                        SendTileTextAll("Hit-and-run", pFromTile.getID(), g);       
+                        
+                        SendTileTextAll(g.HelpText.TEXT(g.infos().effectUnit(hitNRunEff).mName), pFromTile.getID(), g);       
                     }               
                 }
                 if (isCharge(__instance, out Tile impactFrom, pFromTile, pToTile))
