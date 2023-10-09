@@ -51,6 +51,12 @@ namespace DynamicUnits
             AI_MAX_FORT_BORDER_DISTANCE_INSIDE = 4;
         }
        
+        protected override int getNoWonderTurns()
+        {
+            int unmodded = base.getNoWonderTurns();
+            return (unmodded + AI_NO_WONDER_TURNS) / 2;
+
+        }
         protected override bool isFoundCitySafe(Tile pTile)
         {
             if (getDistanceFromNationBorder(pTile) < infos.Globals.MIN_CITY_SITE_DISTANCE)
