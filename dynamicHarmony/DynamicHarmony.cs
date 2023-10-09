@@ -394,10 +394,10 @@ namespace dynamicHarmony
                     MohawkAssert.Assert(false, pFromUnit + " can cause skirmish of " + target + "?");
                 int specialMoveCodeDefender = getSpecialMove(target.getEffectUnits(), target.game().infos(), out why);
                
-                return isSkirmisher == specialMoveCodeDefender && //has this type of special move
-                target.attackDamagePreview(pFromUnit, pFromTile, pFromUnit.player()) < target.getHP() // and not dead
+                return isSkirmisher == specialMoveCodeDefender  //has this type of special move
+                        && target.attackDamagePreview(pFromUnit, pFromTile, pFromUnit.player()) < target.getHP() // and not dead
                         && pFromUnit.canAttackUnitOrCity(pFromTile, pToTile, null) && pFromTile.isTileAdjacent(pToTile) 
-                        && !pToTile.hasCity() && (pToTile.improvement()?.miDefenseModifier ?? 0) < 1;   //skirmish condition: getting hit, adj, and not special tile
+                        && !pToTile.hasCity() && !(pToTile.hasImprovementFinished() && (target.improvementDefenseModifier(pToTile.improvement().meType, pToTile) > 0 ));   //skirmish condition: getting hit, adj, and not special tile
             }
 
             [HarmonyPatch(nameof(Unit.attackUnitOrCity), new Type[] { typeof(Tile), typeof(Player) })]

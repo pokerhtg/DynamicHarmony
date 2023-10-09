@@ -85,6 +85,7 @@ namespace DynamicUnits
            
             chance += player.getOrdersLeft() / 10 - player.countTeamWars() * 3; //for every 30 orders, AI wants to be in 1 war, at a rate of 1% of 10 order of exccess 
             chance += countUnits(IsSettlerDelegate);
+            chance -= getDistanceFromNationBorder(game.player(eOtherPlayer).capitalCity().tile())/5;
             chance = infos.utils().range(chance, 0, 35);
             return chance;
         }
