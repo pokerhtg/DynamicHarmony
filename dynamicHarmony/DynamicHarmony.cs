@@ -177,7 +177,7 @@ namespace dynamicHarmony
                 {      
                     return;
                 }
-                if (pToTile.hasCity() || (pToTile.improvement()?.miDefenseModifier ?? 0) > 0) //can't push off defensive structures
+                if (pToTile.hasCity() || (!pToTile.hasImprovement() || pToTile.defendingUnit().improvementDefenseModifier(pToTile.getImprovement(), pToTile) > 0)) //can't push off defensive structures
                     return;
                
                 using (var unitListScoped = CollectionCache.GetListScoped<int>())
@@ -391,13 +391,24 @@ namespace dynamicHarmony
             {
                 var pToTile = target.tile();
                 if (debug)
-                    MohawkAssert.Assert(false, pFromUnit + " can cause skirmish of " + target + "?");
+                   Debug.Log(pFromUnit + " can cause skirmish of " + target + "?");
                 int specialMoveCodeDefender = getSpecialMove(target.getEffectUnits(), target.game().infos(), out why);
-               
-                return isSkirmisher == specialMoveCodeDefender  //has this type of special move
+  
+                bool result = isSkirmisher == specialMoveCodeDefender  //has this type of special move
                         && target.attackDamagePreview(pFromUnit, pFromTile, pFromUnit.player()) < target.getHP() // and not dead
                         && pFromUnit.canAttackUnitOrCity(pFromTile, pToTile, null) && pFromTile.isTileAdjacent(pToTile) 
-                        && !pToTile.hasCity() && !(pToTile.hasImprovementFinished() && (target.improvementDefenseModifier(pToTile.improvement().meType, pToTile) > 0 ));   //skirmish condition: getting hit, adj, and not special tile
+                        && !pToTile.hasCity() && !(pToTile.hasImprovementFinished() && (target.improvementDefenseModifier(pToTile.getImprovement(), pToTile) > 0 ));   //skirmish condition: getting hit, adj, and not special tile
+               
+                if (debug && result)
+                {
+                    Debug.Log("pushed--------------");
+                    Debug.Log(target.attackDamagePreview(pFromUnit, pFromTile, pFromUnit.player()) < target.getHP());
+                    Debug.Log(pFromUnit.canAttackUnitOrCity(pFromTile, pToTile, null) && pFromTile.isTileAdjacent(pToTile));
+                    Debug.Log(!pToTile.hasCity());
+                    if (pToTile.getImprovement() != ImprovementType.NONE)
+                        Debug.Log(pToTile.getImprovement() + " is there; active defense is " + target.improvementDefenseModifier(pToTile.getImprovement(), pToTile));
+                }
+                return result;
             }
 
             [HarmonyPatch(nameof(Unit.attackUnitOrCity), new Type[] { typeof(Tile), typeof(Player) })]
