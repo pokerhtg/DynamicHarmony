@@ -89,8 +89,8 @@ namespace DynamicUnits
             if (desire < 0)
                 chance -= desire / 20; //desire is between -200 and 0; so this increases chance by up to 10% 
            
-            chance += player.getOrdersLeft() / 10 - player.countTeamWars() * 3; //for every 30 orders, AI wants to be in 1 war, at a rate of 1% of 10 order of exccess 
-            chance += countUnits(IsSettlerDelegate);
+            chance += player.getOrdersLeft() / 10 - player.countTeamWars() * 4; //for every 40 orders, AI wants to be in 1 war, at a rate of 1% of 10 order of exccess 
+
             chance -= getDistanceFromNationBorder(game.player(eOtherPlayer).capitalCity().tile())/5;
             chance = infos.utils().range(chance, 0, 35);
             return chance;

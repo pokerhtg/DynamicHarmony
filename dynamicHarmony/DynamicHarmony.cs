@@ -177,25 +177,33 @@ namespace dynamicHarmony
                 {      
                     return;
                 }
-                if (pToTile.hasCity() || (!pToTile.hasImprovement() || pToTile.defendingUnit().improvementDefenseModifier(pToTile.getImprovement(), pToTile) > 0)) //can't push off defensive structures
-                    return;
-               
-                using (var unitListScoped = CollectionCache.GetListScoped<int>())
+                try
                 {
-                    pToTile.getAliveUnits(unitListScoped.Value);
+                    if (pToTile.hasCity()) //can't push off defensive structures
+                        return;
 
-                    foreach (int iLoopUnit in unitListScoped.Value)
+                    using (var unitListScoped = CollectionCache.GetListScoped<int>())
                     {
-                        Unit pLoopUnit = __instance.game().unit(iLoopUnit);
-                        if (getSpecialMove(pLoopUnit.getEffectUnits(), __instance.game().infos(), out _) != isSkirmisher)
+                        pToTile.getAliveUnits(unitListScoped.Value);
+
+                        foreach (int iLoopUnit in unitListScoped.Value)
                         {
-                            return; //false, no push
-                        }              
+                            Unit pLoopUnit = __instance.game().unit(iLoopUnit);
+                            if (pToTile.hasImprovement() && pLoopUnit.improvementDefenseModifier(pToTile.getImprovement(), pToTile) > 0)
+                                return;
+                            if (getSpecialMove(pLoopUnit.getEffectUnits(), __instance.game().infos(), out _) != isSkirmisher)
+                            {
+                                return; //false, no push
+                            }
+                        }
                     }
+                    if (!pToTile.isTileAdjacent(__instance.tile()))
+                        return;
+                    __result = true; //if all units in the target tile are retreating, hasPush = true
                 }
-                if (!pToTile.isTileAdjacent(__instance.tile()))
+                catch (Exception) {
                     return;
-                __result = true; //if all units in the target tile are retreating, hasPush = true
+                }
             }
 
             [HarmonyPatch(nameof(Unit.getPushTile))]
@@ -313,9 +321,16 @@ namespace dynamicHarmony
                                     //then damage anyway. AKA friendly fire
                                     else
                                     {
-                                        __result += pFromUnit.attackUnitDamage(pFromTile, __instance, false, pFromUnit.attackPercent(eLoopAttack), bCheckOurUnits:false);
+                                        int atkPercent = pFromUnit.attackPercent(eLoopAttack);
+                                        if (pFromUnit.info().mbMelee)
+                                        {
+                                            //melee units don't do much friendly fire...
+                                            atkPercent /= 3;
+                                        }
+                                        __result += pFromUnit.attackUnitDamage(pFromTile, __instance, false, atkPercent, bCheckOurUnits:false);
                                         if (__result >= __instance.getHP())
                                             __result = __instance.getHP() -1; //friendly fire is now no longer deadly
+                                       
                                     }
                                 }
                             }
@@ -497,7 +512,7 @@ namespace dynamicHarmony
                                 continue;
                             if (pLoopTile == pFromTile) //disable friendly damage on self
                                 continue; 
-                            int percent = __instance.attackPercent(eLoopAttack);
+                            int percent = __instance.attackPercent(eLoopAttack) / (__instance.info().mbMelee? 3: 1);
                             Unit pLoopDefendingUnit = pLoopTile.defendingUnit();
                             if (pLoopDefendingUnit == null || percent < 1)
                                 continue;
