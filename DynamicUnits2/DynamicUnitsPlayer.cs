@@ -12,15 +12,15 @@ namespace DynamicUnits
     {
         private int offset = 0;
         static Dictionary<(int, TechType), (int, List<int>)> techCostCache;
-        protected override void processTurn()
+
+        public override void setConvertedLegitimacy(bool bNewValue)
         {
-
-            if (!isFirstTurnProcessing() && isFounded() && infos().Globals.ORDERS_YIELD != YieldType.NONE)
+            if (!bNewValue) //mid process turn is when this happens
                 convertExtraOrdersToCivics();
-
             base.processTurn();
+          
         }
-      
+
         private void convertExtraOrdersToCivics()
         {
             int iExtra = (getYieldStockpileWhole(infos().Globals.ORDERS_YIELD) - getMaxOrders());

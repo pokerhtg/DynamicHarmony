@@ -86,7 +86,7 @@ namespace DynamicUnits
             
             int chance = base.getWarOfferPercent(eOtherPlayer, bDeclare);
             int desire = ((DynamicUnitsPlayer)(player)).desirePeace(eOtherPlayer);
-            if (desire < 0)
+            if (desire < -50)
                 chance -= desire / 20; //desire is between -200 and 0; so this increases chance by up to 10% 
            
             chance += player.getOrdersLeft() / 10 - player.countTeamWars() * 4; //for every 40 orders, AI wants to be in 1 war, at a rate of 1% of 10 order of exccess 

@@ -21,12 +21,7 @@ namespace DynamicUnits
                 base.pillageImprovement(pUnit);
 
         }
-        public override void setImprovementFinished(ImprovementType eImprovement)
-        {
-            base.setImprovementFinished(eImprovement);
-            if (infos().improvement(eImprovement).mbCitySite)
-                setCitySite(CitySiteType.ACTIVE);
-        }
+       
         public override bool impassable()
         {
             if (game().getTurn() < 2 && semipassable()) //at the beginning of the game, mountains are considered impassable--to help map gen
