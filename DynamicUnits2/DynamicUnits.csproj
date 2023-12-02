@@ -32,10 +32,13 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Mohawk.SystemCore, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" />
+    <Reference Include="Mohawk.SystemCore, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorldTestBranch\OldWorld_Data\Managed\Mohawk.SystemCore.dll</HintPath>
+    </Reference>
     <Reference Include="Mohawk.UIInterfaces, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorld\OldWorld_Data\Managed\Mohawk.UIInterfaces.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorldTestBranch\OldWorld_Data\Managed\Mohawk.UIInterfaces.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -48,9 +51,6 @@
     <Reference Include="TenCrowns.GameCore, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorldTestBranch\OldWorld_Data\Managed\TenCrowns.GameCore.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine">
-      <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorld\OldWorld_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorld\OldWorld_Data\Managed\UnityEngine.CoreModule.dll</HintPath>

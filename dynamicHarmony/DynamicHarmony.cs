@@ -111,7 +111,7 @@ namespace dynamicHarmony
                     pToTile.getAliveUnits(enemies);
 
                     if (!pToTile.hasCity() && enemies.Count == 1 && ((pToTile.improvement()?.miDefenseModifier?? 0) < 1) && pFromTile.distanceTile(pToTile) == 2 //here's that "2" referred to in the TODO above
-                        && (pToTile.defendingUnit()?.movement() ?? -1) > 0 && pToTile.canUnitPass(unit.getType(), unit.getPlayer(), unit.getTribe(), unit.getTeam(), false, true)
+                        && (pToTile.defendingUnit()?.movement() ?? -1) > 0 && pToTile.canUnitOccupy(unit, unit.getTeam(), false, false, true)
                         && !unit.game().unit(enemies.First()).isWorker() ) //charging against worker, who could be making a wonder, is pretty OP. Banned!
                     {
                         List<int> adjTiles = new List<int>();
@@ -727,7 +727,7 @@ namespace dynamicHarmony
                     //SHOOT! 
                     try
                     {
-                        __instance.doAttackFromCurrentTile(false);
+                        doAttackFromCurrentTile(__instance, false);
                     }
                     catch (Exception)
                     {
@@ -755,7 +755,12 @@ namespace dynamicHarmony
             {
                 throw new NotImplementedException("It's a stub");
             }
-           
+            [HarmonyReversePatch]
+            [HarmonyPatch("doAttackFromCurrentTile")]
+            public static bool doAttackFromCurrentTile(Unit.UnitAI ai, bool bKillOnly)
+            {
+                throw new NotImplementedException("It's a stub");
+            }
 
             [HarmonyPatch(nameof(Unit.UnitAI.movePriorityCompare))]
             // public virtual int movePriorityCompare(Unit pOther)

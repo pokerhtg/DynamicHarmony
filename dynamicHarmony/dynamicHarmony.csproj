@@ -34,39 +34,29 @@
     <RunPostBuildEvent>Always</RunPostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="0Harmony">
-      <HintPath>..\..\..\Mods\Dynamic Units beta\0Harmony.dll</HintPath>
-    </Reference>
-    <Reference Include="Mohawk.SystemCore">
-      <HintPath>..\DynamicUnits2\bin\Debug\Mohawk.SystemCore.dll</HintPath>
-    </Reference>
-    <Reference Include="Mohawk.UIInterfaces, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Compile Include="DynamicHarmony.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="0Harmony, Version=2.2.2.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorld\OldWorld_Data\Managed\Mohawk.UIInterfaces.dll</HintPath>
+      <HintPath>..\..\..\Test\Mods\Dynamic battlefield\0Harmony.dll</HintPath>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
+    <Reference Include="Mohawk.SystemCore, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorldTestBranch\OldWorld_Data\Managed\Mohawk.SystemCore.dll</HintPath>
+    </Reference>
     <Reference Include="TenCrowns.GameCore, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorld\OldWorld_Data\Managed\TenCrowns.GameCore.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorldTestBranch\OldWorld_Data\Managed\TenCrowns.GameCore.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorld\OldWorld_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorldTestBranch\OldWorld_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorldTestBranch\OldWorld_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="DynamicHarmony.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

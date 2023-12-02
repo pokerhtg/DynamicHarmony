@@ -72,26 +72,23 @@ namespace DynamicUnits
         {
             //inmobile units worth less
             long val = base.calculateUnitValue(eUnit);
-            if (isSettler(eUnit))
-            {
-                val *= 2;
-                val /= 1+ countUnits(IsSettlerDelegate);
-                
-            }
+           
             return infos.unit(eUnit).miMovement < 1 ? val / 8: val;
         }
-
-    public override int getWarOfferPercent(PlayerType eOtherPlayer, bool bDeclare)
+        // public virtual int getWarOfferPercent(PlayerType eOtherPlayer, bool bDeclare = true, bool bPreparedOnly = false, bool bCurrentPlayer = true
+        public override int getWarOfferPercent(PlayerType eOtherPlayer, bool bDeclare, bool bPreparedOnly = false, bool bCurrentPlayer = true)
         {
-            
-            int chance = base.getWarOfferPercent(eOtherPlayer, bDeclare);
-            int desire = ((DynamicUnitsPlayer)(player)).desirePeace(eOtherPlayer);
-            if (desire < -50)
-                chance -= desire / 20; //desire is between -200 and 0; so this increases chance by up to 10% 
+            int chance = base.getWarOfferPercent(eOtherPlayer, bDeclare, bPreparedOnly,  bCurrentPlayer );
            
-            chance += player.getOrdersLeft() / 10 - player.countTeamWars() * 4; //for every 40 orders, AI wants to be in 1 war, at a rate of 1% of 10 order of exccess 
+            chance -= getDistanceFromNationBorder(game.player(eOtherPlayer).capitalCity().tile()) / 5;
+            if (!bPreparedOnly)
+            {
+                int desire = ((DynamicUnitsPlayer)(player)).desirePeace(eOtherPlayer);
+                if (desire < -50)
+                    chance -= desire / 20; //desire is between -200 and 0; so this increases chance by up to 10% 
 
-            chance -= getDistanceFromNationBorder(game.player(eOtherPlayer).capitalCity().tile())/5;
+                chance += player.getOrdersLeft() / 10 - player.countTeamWars() * 4; //for every 40 orders, AI wants to be in 1 war, at a rate of 1% of 10 order of exccess 
+            }
             chance = infos.utils().range(chance, 0, 35);
             return chance;
         }

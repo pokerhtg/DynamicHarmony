@@ -123,13 +123,13 @@ namespace DynamicUnits
        public override int attackValue(AttackType eAttack)
        {
            int iValue = 0;
-
+           
            foreach (EffectUnitType eLoopEffectUnit in getEffectUnits())
            {
                int iSubValue = infos().effectUnit(eLoopEffectUnit).maiAttackValue[(int)eAttack];
-               if (iSubValue > iValue)
+                if (iSubValue > iValue)
                {
-                   iValue = iSubValue;
+                   iValue = iSubValue; //was +=
                }
            }
 
