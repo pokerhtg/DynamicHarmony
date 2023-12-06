@@ -674,7 +674,7 @@ namespace dynamicHarmony
                 __result = Math.Max(0, __result); //negative should be handled same as zero...but just in case. zero means not a valid target (which is a stronger rejection than base method's floor of 1).
             }
 
-            [HarmonyPatch(typeof(Unit.UnitAI), nameof(Unit.UnitAI.getAttackTiles), new Type[] { typeof(PathFinder), typeof(Tile), typeof(bool), typeof(List<int>) })]
+            [HarmonyPatch(typeof(Unit.UnitAI), nameof(Unit.UnitAI.getAttackTiles), new Type[] {typeof(Tile), typeof(bool), typeof(List<int>) })]
             // public virtual void getAttackTiles(PathFinder pPathfinder, Tile pTargetTile, bool bTestUnits, List<int> aiAttackTiles)
             ///charge AI--did you know, melee can attack range 2?
             static bool Prefix(ref Unit ___unit, Tile pTargetTile, bool bTestUnits, List<int> aiAttackTiles)

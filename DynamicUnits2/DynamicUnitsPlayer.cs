@@ -121,7 +121,7 @@ namespace DynamicUnits
                 }
             }
 
-            int discount = 35 + MAXDISCOUNT * knownNations * distanceFactor / totalDistFactor / eligibleNations; //standard discount is 35%, compensated in globalsxml's tech cost, to make people feel better about getting a discount most of the time
+            int discount = 25 + MAXDISCOUNT * knownNations * distanceFactor / totalDistFactor / eligibleNations; //standard discount is 25%, compensated in globalsxml's tech cost, to make people feel better about getting a discount most of the time
 
             int difficulty = (int)getDifficulty();
             if (knownNations == 0)
@@ -129,11 +129,12 @@ namespace DynamicUnits
             else discount += (10 - difficulty) * 2; //someone knows? you get a discount based on your difficulty
             discount -= (int)Math.Pow(difficulty, 1.8); //playing on harder difficulties? research gets harder (42% on Great)
 
+           
+            if (infos().tech(eTech).mbTrash)
+                discount += cost / 40; //discount by 1 extra percent for every 30 cost of science --so late game bonus cards are notably cheaper
+            
             if (eligibleNations == 1) //unique tech just for you
                 discount = (MAXDISCOUNT + discount) / 2;
-            if (infos().tech(eTech).mbTrash)
-                discount += cost / 30; //discount by 1 extra percent for every 30 cost of science --so late game bonus cards are notably cheaper
-
             discount = Math.Min(MAXDISCOUNT, discount);
             why.Add(cost);
             why.Add(knownNations);
