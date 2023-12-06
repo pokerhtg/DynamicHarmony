@@ -55,13 +55,13 @@ namespace dynamicHarmony
             /// <returns> int code of the MOVE_SPECIAL </returns>
             public static int getSpecialMove(ReadOnlyList<EffectUnitType> effectUnitTypes, Infos info, out EffectUnitType eff)
             {
-                int index = AttackIndex("MOVE_SPECIAL", info);
+                AttackType atkType = AttackIndex("MOVE_SPECIAL", info);
                 eff = EffectUnitType.NONE;
                 
-                if (index > -1)
+                if (atkType != AttackType.NONE)
                     foreach (EffectUnitType eLoopEffectUnit in effectUnitTypes)
                     {
-                        int iSubValue = info.effectUnit(eLoopEffectUnit).maiAttackValue[index];
+                        int iSubValue = info.effectUnit(eLoopEffectUnit).maiAttackValue[atkType];
                         if (iSubValue != 0)
                         {
                             eff = eLoopEffectUnit;
@@ -71,14 +71,14 @@ namespace dynamicHarmony
                     }
                 return 0;
             }
-            public static int AttackIndex(String type, Infos info)
+            public static AttackType AttackIndex(String type, Infos info)
             {
                 for (AttackType eLoopAttack = 0; eLoopAttack < info.attacksNum(); eLoopAttack++)
                 {
                     if (eLoopAttack == info.getType<AttackType>(type))
-                        return (int)eLoopAttack;
+                        return eLoopAttack;
                 }
-                return -1;
+                return AttackType.NONE;
             }
             public static bool isCharge(Unit unit, out Tile impactFrom, Tile pFromTile=null, Tile pToTile=null)
             {
@@ -89,9 +89,9 @@ namespace dynamicHarmony
                
                 bool isCharge = false;
                 var info = unit.game().infos();
-                int chargeIndex = AttackIndex("CHARGE", info);
+                AttackType chargeIndex = AttackIndex("CHARGE", info);
                 
-                if (chargeIndex > -1)
+                if (chargeIndex!= AttackType.NONE)
                     foreach (EffectUnitType eLoopEffectUnit in unit.getEffectUnits())
                     {
                         int iSubValue = info.effectUnit(eLoopEffectUnit)?.maiAttackValue[chargeIndex] ?? 0;
@@ -155,12 +155,13 @@ namespace dynamicHarmony
             /// <returns></returns>
             public static EffectUnitType getEffectName(ReadOnlyList<EffectUnitType> effectUnitTypes, String target, Infos info)
             {
+                
                 for (AttackType eLoopAttack = 0; eLoopAttack < info.attacksNum(); eLoopAttack++)
                 {
                     if (eLoopAttack == info.getType<AttackType>(target))
                         foreach (EffectUnitType eLoopEffectUnit in effectUnitTypes)
                         {
-                            int iSubValue = info.effectUnit(eLoopEffectUnit).maiAttackValue[(int) eLoopAttack];
+                            int iSubValue = info.effectUnit(eLoopEffectUnit).maiAttackValue[eLoopAttack];
                             if (iSubValue != 0)
                             {
                                 return eLoopEffectUnit;
@@ -860,8 +861,8 @@ namespace dynamicHarmony
                 Infos infos = __instance.ModSettings.Infos;
                 try
                 {
-                    int moveSpecialCode = infos.effectUnit(eEffectUnit).maiAttackValue[(int)infos.getType<AttackType>("MOVE_SPECIAL")];
-                    int chargeCode = infos.effectUnit(eEffectUnit).maiAttackValue[(int)infos.getType<AttackType>("CHARGE")];
+                    int moveSpecialCode = infos.effectUnit(eEffectUnit).maiAttackValue[infos.getType<AttackType>("MOVE_SPECIAL")];
+                    int chargeCode = infos.effectUnit(eEffectUnit).maiAttackValue[infos.getType<AttackType>("CHARGE")];
                     if (moveSpecialCode == isSkirmisher)
                     {
                         builder.AddTEXT("TEXT_HELP_RETREAT_SHORT");

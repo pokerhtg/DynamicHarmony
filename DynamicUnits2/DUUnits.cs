@@ -126,7 +126,7 @@ namespace DynamicUnits
            
            foreach (EffectUnitType eLoopEffectUnit in getEffectUnits())
            {
-               int iSubValue = infos().effectUnit(eLoopEffectUnit).maiAttackValue[(int)eAttack];
+               int iSubValue = infos().effectUnit(eLoopEffectUnit).maiAttackValue[eAttack];
                 if (iSubValue > iValue)
                {
                    iValue = iSubValue; //was +=
