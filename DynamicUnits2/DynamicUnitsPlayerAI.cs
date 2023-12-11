@@ -6,12 +6,13 @@ namespace DynamicUnits
 {
     internal class DynamicUnitsPlayerAI : Player.PlayerAI
     {
-        
+     
         public override void init(Game pGame, Player pPlayer, Tribe pTribe)
         {
             updateAIPriorities(pGame.randomNext(13));
             base.init(pGame,pPlayer, pTribe);
         }
+
         private void updateAIPriorities(int seed)
         {
             int offset = 1 + (seed % 13);  
@@ -30,6 +31,7 @@ namespace DynamicUnits
             AI_NO_WONDER_TURNS = 10 + offset * 2;
             AI_WONDER_VALUE -= 50 * (13 - offset);
             AI_VP_VALUE /= 2;
+            AI_UNIT_SCOUT_VALUE *= 3;
             AI_UNIT_LEVEL_VALUE *= 2;
             AI_UNIT_PUSH_VALUE *= 2;
             AI_UNIT_ROUT_VALUE *= 2;
@@ -75,22 +77,25 @@ namespace DynamicUnits
            
             return infos.unit(eUnit).miMovement < 1 ? val / 8: val;
         }
+
         // public virtual int getWarOfferPercent(PlayerType eOtherPlayer, bool bDeclare = true, bool bPreparedOnly = false, bool bCurrentPlayer = true
         public override int getWarOfferPercent(PlayerType eOtherPlayer, bool bDeclare, bool bPreparedOnly = false, bool bCurrentPlayer = true)
         {
-            int chance = base.getWarOfferPercent(eOtherPlayer, bDeclare, bPreparedOnly,  bCurrentPlayer );
-           
-            chance -= getDistanceFromNationBorder(game.player(eOtherPlayer).capitalCity().tile()) / 5;
+            int chance = base.getWarOfferPercent(eOtherPlayer, bDeclare, bPreparedOnly, bCurrentPlayer);
+
+        chance -= getDistanceFromNationBorder(game.player(eOtherPlayer).capitalCity().tile()) / 5;
             if (!bPreparedOnly)
             {
                 int desire = ((DynamicUnitsPlayer)(player)).desirePeace(eOtherPlayer);
-                if (desire < -50)
+                if (desire< -50)
                     chance -= desire / 20; //desire is between -200 and 0; so this increases chance by up to 10% 
 
-                chance += player.getOrdersLeft() / 10 - player.countTeamWars() * 4; //for every 40 orders, AI wants to be in 1 war, at a rate of 1% of 10 order of exccess 
+                chance += player.getOrdersLeft() / 10 - player.countTeamWars()* 4; //for every 40 orders, AI wants to be in 1 war, at a rate of 1% of 10 order of exccess 
             }
-            chance = infos.utils().range(chance, 0, 35);
+    chance = infos.utils().range(chance, 0, 35);
             return chance;
         }
+        
     }
+
 }

@@ -12,10 +12,11 @@ namespace DynamicUnits
     {
         private int offset = 0;
         static Dictionary<(int, TechType), (int, List<int>)> techCostCache;
-
+        
         public override void setConvertedLegitimacy(bool bNewValue)
         {
-            if (!bNewValue) //mid process turn is when this happens
+         
+            if (game().getTurn() != 1 && !bNewValue) //mid process turn is when this happens; also need to exclude first turn; pick later interacts with this surgery
                 convertExtraOrdersToCivics();
             base.processTurn();
 
@@ -39,7 +40,7 @@ namespace DynamicUnits
                 pushLogData(() => logDataSB.ProfiledToString(), GameLogType.MAX_ORDERS);
             }
         }
-
+        
         public override bool canGiftCity(City pCity, PlayerType eToPlayer, bool bTestEnabled = true)
         {
             if (base.canGiftCity(pCity, eToPlayer, bTestEnabled))
@@ -64,9 +65,9 @@ namespace DynamicUnits
             base.doEventTriggers();
             if (game().randomNext(game().eventLevel().miTurns) == 0)
                 doEventPlayer();
-
-            if (game().eventLevel().miPercent > 90)
+            if (game().randomNext(game().eventLevel().miPercent) > 50)
                 doEventPlayer();
+            
 
         }
 
@@ -146,7 +147,7 @@ namespace DynamicUnits
 
             return cost;
         }
-
+       
         //how this AI perceives their warscore is, biased from reality
         public int desirePeace(PlayerType other)
         {
@@ -258,7 +259,7 @@ namespace DynamicUnits
             }
             return iCount;
         }
-
+        
     }
 
 }
