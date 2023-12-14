@@ -26,7 +26,6 @@ namespace DynamicUnits
             AI_GOODS_VALUE = AI_MONEY_VALUE * 5 - offset;
             AI_MONEY_STOCKPILE_TURNS /= 2;
             AI_NUM_GOODS_TARGET = 700 + 100 * offset;
-            AI_TURNS_BETWEEN_KILLS += offset;
             AI_CHARACTER_OPINION_VALUE *= 2;
             AI_NO_WONDER_TURNS = 10 + offset * 2;
             AI_WONDER_VALUE -= 50 * (13 - offset);
@@ -42,10 +41,9 @@ namespace DynamicUnits
             AI_UNIT_GENERAL_VALUE *= 2;
 
             AI_YIELD_TURNS += 3 * offset;
-           // AI_YIELD_SHORTAGE_PER_TURN_MODIFIER /= 2;
             AI_UNIT_RANDOM_PROMOTION_VALUE = AI_UNIT_PROMOTE_VALUE/2;
             
-            AI_TRADE_NETWORK_VALUE_ESTIMATE = 400 + 40*offset;
+            AI_TRADE_NETWORK_VALUE_ESTIMATE = 400 + 60*offset;
             AI_BUILD_URBAN_VALUE *= 4;
             AI_IDLE_XP_VALUE /= 2;
             AI_CITY_REBEL_VALUE /= 3;

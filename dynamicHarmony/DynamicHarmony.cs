@@ -752,6 +752,7 @@ namespace dynamicHarmony
 
             [HarmonyReversePatch]
             [HarmonyPatch("doMoveToBestTile")]
+            //protected virtual bool doMoveToBestTile(PathFinder pPathfinder, int iMaxSteps, Predicate<Tile> tileValid, Func<Tile, long> tileValue)
             public static bool doMoveToBestTile(Unit.UnitAI ai, PathFinder pPathfinder, int iMaxSteps, Predicate<Tile> tileValid, Func<Tile, long> tileValue)
             {
                 throw new NotImplementedException("It's a stub");
