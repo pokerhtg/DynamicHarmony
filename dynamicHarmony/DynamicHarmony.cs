@@ -45,7 +45,6 @@ namespace dynamicHarmony
         [HarmonyPatch(typeof(Unit))]
         public class PatchUnitBehaviors
         {
-           
             /// <summary>
             /// main utility method identifying the type of special movement rules, if any
             /// </summary>

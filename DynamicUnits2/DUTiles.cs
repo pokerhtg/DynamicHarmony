@@ -72,7 +72,7 @@ namespace DynamicUnits
         public override bool canBothUnitsOccupy(UnitType eUnit, PlayerType ePlayer, Unit pOtherUnit)
         {
             if (pOtherUnit.getPlayer() == ePlayer)
-                if (pOtherUnit.movement() < 1 || infos().unit(eUnit).miMovement < 1)
+                if (pOtherUnit.movement() < 1 != infos().unit(eUnit).miMovement < 1) //XOR
                     return true;
             return base.canBothUnitsOccupy(eUnit, ePlayer, pOtherUnit); 
         }
