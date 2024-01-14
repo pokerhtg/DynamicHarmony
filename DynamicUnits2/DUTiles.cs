@@ -69,12 +69,12 @@ namespace DynamicUnits
         {
             return height().miMovementCost > 14;
         }
-        public override bool canBothUnitsOccupy(UnitType eUnit, PlayerType ePlayer, Unit pOtherUnit)
+        public override bool canBothUnitsOccupy(Unit pUnit, Unit pOtherUnit)
         {
-            if (pOtherUnit.getPlayer() == ePlayer)
-                if (pOtherUnit.movement() < 1 != infos().unit(eUnit).miMovement < 1) //XOR
+            if (pOtherUnit.getPlayer() == pUnit.getPlayer())
+                if (pOtherUnit.movement() < 1 != pUnit.movement() < 1) //XOR
                     return true;
-            return base.canBothUnitsOccupy(eUnit, ePlayer, pOtherUnit); 
+            return base.canBothUnitsOccupy(pUnit, pOtherUnit); 
         }
 
         public override bool canUnitOccupy(Unit pUnit, TeamType eVisibilityTeam, bool bTestTheirUnits, bool bTestOurUnits, bool bFinalMoveTile)
