@@ -9,14 +9,9 @@ namespace DynamicUnits
      
         public override void init(Game pGame, Player pPlayer, Tribe pTribe)
         {
+            base.init(pGame, pPlayer, pTribe);
             updateAIPriorities(pGame.randomNext(13));
-            base.init(pGame,pPlayer, pTribe);
-        }
-
-        public override void initClient(Game pGame, Player pPlayer, Tribe pTribe)
-        {
-            updateAIPriorities(pGame.randomNext(13));
-            base.initClient(pGame, pPlayer, pTribe);
+           
         }
 
         private void updateAIPriorities(int seed)
