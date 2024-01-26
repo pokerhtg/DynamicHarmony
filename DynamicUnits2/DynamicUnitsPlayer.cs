@@ -65,10 +65,6 @@ namespace DynamicUnits
             base.doEventTriggers();
             if (game().randomNext(game().eventLevel().miTurns) == 0)
                 doEventPlayer();
-            if (game().randomNext(game().eventLevel().miPercent) > 50)
-                doEventPlayer();
-            
-
         }
 
         public int diffusedTechCost(TechType eTech, out List<int> why)

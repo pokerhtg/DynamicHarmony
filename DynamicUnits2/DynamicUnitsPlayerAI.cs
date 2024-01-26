@@ -24,12 +24,12 @@ namespace DynamicUnits
             AI_ORDERS_VALUE += 10 * offset;
             AI_MONEY_VALUE = 7 + offset;
             AI_TRAINING_VALUE -= offset;
-            AI_GOODS_VALUE = AI_MONEY_VALUE * 4;
+            AI_GOODS_VALUE = AI_MONEY_VALUE * 4 + offset;
             AI_MONEY_STOCKPILE_TURNS /= 2;
             AI_NUM_GOODS_TARGET = 700 + 100 * offset;
             AI_CHARACTER_OPINION_VALUE *= 2;
             AI_NO_WONDER_TURNS = 15 + offset * 2;
-            AI_WONDER_VALUE -= 50 * (13 - offset);
+            AI_WONDER_VALUE -= 50 * (14 - offset);
             AI_VP_VALUE /= 2;
             AI_UNIT_SCOUT_VALUE *= 3;
             AI_UNIT_LEVEL_VALUE *= 2;

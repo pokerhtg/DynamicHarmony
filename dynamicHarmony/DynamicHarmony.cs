@@ -110,7 +110,7 @@ namespace dynamicHarmony
                     pToTile.getAliveUnits(enemies);
 
                     if (!pToTile.hasCity() && enemies.Count == 1 && ((pToTile.improvement()?.miDefenseModifier?? 0) < 1) && pFromTile.distanceTile(pToTile) == 2 //here's that "2" referred to in the TODO above
-                        && (pToTile.defendingUnit()?.movement() ?? -1) > 0 && pToTile.canUnitOccupy(unit, unit.getTeam(), false, false, true)
+                        && (pToTile.defendingUnit()?.movement() ?? -1) > 0 && pToTile.canUnitOccupy(unit, unit.getTeam(), false, false, true, false)
                         && !unit.game().unit(enemies.First()).isWorker() ) //charging against worker, who could be making a wonder, is pretty OP. Banned!
                     {
                         List<int> adjTiles = new List<int>();
@@ -129,12 +129,12 @@ namespace dynamicHarmony
                                     MohawkAssert.Assert(false, "Found a third tile; geometry is broken");
                             }
                         }
-                        if (candidate1 != null && candidate1.canUnitOccupy(unit, unit.getTeam(), true, true, true))
+                        if (candidate1 != null && candidate1.canUnitOccupy(unit, unit.getTeam(), true, true, true, false))
                         {
                             impactFrom= candidate1;
                             return true;
                         }
-                        else if(candidate2 != null && candidate2.canUnitOccupy(unit, unit.getTeam(), true, true, true))
+                        else if(candidate2 != null && candidate2.canUnitOccupy(unit, unit.getTeam(), true, true, true, false))
                         {
                             impactFrom = candidate2;
                             return true;

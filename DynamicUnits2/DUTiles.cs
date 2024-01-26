@@ -77,7 +77,7 @@ namespace DynamicUnits
             return base.canBothUnitsOccupy(pUnit, pOtherUnit); 
         }
 
-        public override bool canUnitOccupy(Unit pUnit, TeamType eVisibilityTeam, bool bTestTheirUnits, bool bTestOurUnits, bool bFinalMoveTile)
+        public override bool canUnitOccupy(Unit pUnit, TeamType eVisibilityTeam, bool bTestTheirUnits, bool bTestOurUnits, bool bFinalMoveTile, bool bBumped)
         {
             if (pUnit.movement() < 1)
                 return true;
@@ -94,7 +94,7 @@ namespace DynamicUnits
                     }
                 }
             }
-            return base.canUnitOccupy(pUnit, eVisibilityTeam, bTestTheirUnits, bTestOurUnits, bFinalMoveTile);
+            return base.canUnitOccupy(pUnit, eVisibilityTeam, bTestTheirUnits, bTestOurUnits, bFinalMoveTile, bBumped);
         }
      }
 }
