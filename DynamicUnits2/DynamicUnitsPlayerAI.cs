@@ -18,20 +18,20 @@ namespace DynamicUnits
         {
             int offset = 1 + (seed % 13);  
             AI_MAX_WATER_CONTROL_DISTANCE = 15;
-            AI_GROWTH_VALUE -= offset;
+            //AI_GROWTH_VALUE -= offset;
             AI_CULTURE_VALUE = 30 + offset;
             AI_HAPPINESS_VALUE -= 5 * offset;
             AI_ORDERS_VALUE += 10 * offset;
-            AI_MONEY_VALUE = 7 + offset;
+            AI_MONEY_VALUE = 7 + offset/2;
             AI_TRAINING_VALUE -= offset;
-            AI_GOODS_VALUE = AI_MONEY_VALUE * 4 + offset;
-            AI_MONEY_STOCKPILE_TURNS /= 2;
+            AI_GOODS_VALUE = AI_MONEY_VALUE * 4 + offset/3;
+            AI_MONEY_STOCKPILE_TURNS *= 2;
             AI_NUM_GOODS_TARGET = 700 + 100 * offset;
             AI_CHARACTER_OPINION_VALUE *= 2;
             AI_NO_WONDER_TURNS = 15 + offset * 2;
-            AI_WONDER_VALUE -= 50 * (14 - offset);
-            AI_VP_VALUE /= 2;
-            AI_UNIT_SCOUT_VALUE *= 3;
+            AI_WONDER_VALUE -= 50 * (20 - offset);
+            AI_VP_VALUE -= 10 * offset;
+            AI_UNIT_SCOUT_VALUE *= 2;
             AI_UNIT_LEVEL_VALUE *= 2;
             AI_UNIT_PUSH_VALUE *= 2;
             AI_UNIT_ROUT_VALUE *= 2;
@@ -41,13 +41,13 @@ namespace DynamicUnits
             AI_UNIT_PROMOTE_VALUE *= 2;
             AI_UNIT_GENERAL_VALUE *= 2;
 
-            AI_YIELD_TURNS += 3 * offset;
+            AI_YIELD_TURNS += 2 * offset;
             AI_UNIT_RANDOM_PROMOTION_VALUE = AI_UNIT_PROMOTE_VALUE/2;
             
             AI_TRADE_NETWORK_VALUE_ESTIMATE = 400 + 60*offset;
-            AI_BUILD_URBAN_VALUE *= 4;
+            AI_BUILD_URBAN_VALUE *= 3;
             AI_IDLE_XP_VALUE /= 2;
-            AI_CITY_REBEL_VALUE /= 3;
+            AI_CITY_REBEL_VALUE /= 2;
             AI_WASTED_EFFECT_VALUE = -offset;
             AI_MAX_FORT_BORDER_DISTANCE_INSIDE = 4;
         }
@@ -67,7 +67,7 @@ namespace DynamicUnits
         public override long getFortValue(ImprovementType eImprovement, Tile pTile)
         {
             //defense structures aren't that important
-            return base.getFortValue(eImprovement, pTile)/2;  
+            return base.getFortValue(eImprovement, pTile)*2/3;  
         }
         protected override long calculateUnitValue(UnitType eUnit)
         {
@@ -76,7 +76,7 @@ namespace DynamicUnits
            
             return infos.unit(eUnit).miMovement < 1 ? val / 8: val;
         }
-
+        /**
         // public virtual int getWarOfferPercent(PlayerType eOtherPlayer, bool bDeclare = true, bool bPreparedOnly = false, bool bCurrentPlayer = true
         public override int getWarOfferPercent(PlayerType eOtherPlayer, bool bDeclare, bool bPreparedOnly = false, bool bCurrentPlayer = true)
         {
@@ -94,7 +94,7 @@ namespace DynamicUnits
     chance = infos.utils().range(chance, 0, 35);
             return chance;
         }
-        
+        **/
     }
 
 }

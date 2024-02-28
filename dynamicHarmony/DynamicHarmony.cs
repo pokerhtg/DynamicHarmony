@@ -413,7 +413,7 @@ namespace dynamicHarmony
                 bool result = isSkirmisher == specialMoveCodeDefender  //has this type of special move
                         && target.attackDamagePreview(pFromUnit, pFromTile, pFromUnit.player()) < target.getHP() // and not dead
                         && pFromUnit.canAttackUnitOrCity(pFromTile, pToTile, null) && pFromTile.isTileAdjacent(pToTile) 
-                        && !pToTile.hasCity() && !(pToTile.hasImprovementFinished() && (target.improvementDefenseModifier(pToTile.getImprovement(), pToTile) > 0 ));   //skirmish condition: getting hit, adj, and not special tile
+                        && !pToTile.hasCity() && !pToTile.isCitySiteAny() && !(pToTile.hasImprovementFinished() && (target.improvementDefenseModifier(pToTile.getImprovement(), pToTile) > 0 ));   //skirmish condition: getting hit, adj, and not special tile
                
                 if (debug && result)
                 {
@@ -696,7 +696,7 @@ namespace dynamicHarmony
                                     if (___unit.canTargetTile(pMoveTile, pTargetTile))
                                     {
                                         ++iNumValidTilesAtRange;
-                                        if (___unit.canOccupyTile(pMoveTile, ___unit.getTeam(), bTestUnits, bTestUnits))
+                                        if (___unit.canOccupyTile(pMoveTile, ___unit.getTeam(), bTestUnits, bTestUnits, false))
                                         {
                                             if (___unit.player().AI.isTileReachable(pMoveTile, ___unit.tile()))
                                             {

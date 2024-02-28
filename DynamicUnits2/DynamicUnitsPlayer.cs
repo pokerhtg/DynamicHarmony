@@ -11,7 +11,7 @@ namespace DynamicUnits
     internal class DynamicUnitsPlayer : Player
     {
         private int offset = 0;
-        static Dictionary<(int, TechType), (int, List<int>)> techCostCache;
+        static Dictionary<(int, InfoTech), (int, List<int>)> techCostCache;
         
         public override void setConvertedLegitimacy(bool bNewValue)
         {
@@ -67,22 +67,23 @@ namespace DynamicUnits
                 doEventPlayer();
         }
 
-        public int diffusedTechCost(TechType eTech, out List<int> why)
+        public int diffusedTechCost(TechType eTechnology, out List<int> why)
         {
             if (techCostCache == null)
-                techCostCache = new Dictionary<(int, TechType), (int, List<int>)>();
+                techCostCache = new Dictionary<(int, InfoTech), (int, List<int>)>();
 
-            var key = (game().getTurn(), eTech);
-
+            var infoTech = infos().tech(eTechnology);
+            var key = (game().getTurn(), infoTech);
+           
             if (techCostCache.TryGetValue(key, out (int, List<int>) cache))
             {
                 why = cache.Item2;
                 return cache.Item1;
             }
 
-            int cost = infos().utils().modify(infos().tech(eTech).miCost, infos().Globals.TECH_GLOBAL_MODIFIER);
+            int cost = infos().utils().modify(infoTech.miCost, infos().Globals.TECH_GLOBAL_MODIFIER);
 
-            const int MAXDISCOUNT = 95; //won't end up this high, thanks to integer division, plus the spooky phantom 1 tile away
+            const int MAXDISCOUNT = 93; //won't end up this high, thanks to integer division, plus the spooky phantom 1 tile away
 
             int distanceFactor = 0;
             int knownNations = 0;
@@ -105,13 +106,13 @@ namespace DynamicUnits
 
                 int dist = capital.distanceTile(pCapital.tile());
 
-                if (p.isTechAcquired(eTech))
+                if (p.isTechAcquired(eTechnology))
                 {
                     knownNations++;
                     distanceFactor += 200 / dist;
                 }
 
-                if (p.isTechValid(eTech))
+                if (p.isTechValid(eTechnology))
                 {
                     eligibleNations++;
                     totalDistFactor += 200 / dist;
@@ -127,7 +128,7 @@ namespace DynamicUnits
             discount -= (int)Math.Pow(difficulty, 1.8); //playing on harder difficulties? research gets harder (42% on Great)
 
            
-            if (infos().tech(eTech).mbTrash)
+            if (infoTech.mbTrash)
                 discount += cost / 40; //discount by 1 extra percent for every 30 cost of science --so late game bonus cards are notably cheaper
             
             if (eligibleNations == 1) //unique tech just for you
@@ -164,7 +165,7 @@ namespace DynamicUnits
             }
             desireForPeace += pOtherPlayer.playerOpinionOfUs(other).miTrucePercent;
 
-            desireForPeace += 5 * (game().getTeamConflictNumTurns(getTeam(), otherTeam) - game().opponentLevel().miEndWarMinTurns);
+            desireForPeace += 2 * (game().getTeamConflictNumTurns(getTeam(), otherTeam) - game().opponentLevel().miEndWarMinTurns);
 
             desireForPeace = infos().utils().modify(desireForPeace, infos().proximity(pOtherPlayer.calculateProximityPlayer(other)).miTruceModifier, true);
             desireForPeace = infos().utils().modify(desireForPeace, infos().power(pOtherPlayer.calculatePowerOf(other)).miTruceModifier, true);
@@ -198,7 +199,7 @@ namespace DynamicUnits
 
             var ourTech = getTotalTechProgress();
             var theirTech = pOtherPlayer.getTotalTechProgress();
-            desireForPeace += 100 * weight * (theirTech - ourTech) / (DAMPER + ourTech) / 100;
+            desireForPeace -= 100 * weight * (theirTech - ourTech) / (DAMPER + ourTech) / 100;
 
             if (other == mePlayer)
                 offset = desireForPeace; //this makes sure opinion of others remain anchored
@@ -211,7 +212,7 @@ namespace DynamicUnits
             desireForPeace -= weight * diplomaticSupport;
 
             // Debug.Log(this.mePlayer+ "'s raw peace perceiption of " + other + " is " + desireForPeace);
-            desireForPeace = infos().utils().range(desireForPeace, -200, 200);
+            desireForPeace = infos().utils().range(desireForPeace, -200, 100);
             return desireForPeace;
         }
         public override int calculateTotalStrength()
