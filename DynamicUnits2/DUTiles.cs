@@ -30,9 +30,9 @@ namespace DynamicUnits
             return mpCurrentData.mTileData.isImpassable(infos());
             
         }
-        public override bool canUnitPass(UnitType eUnit, PlayerType ePlayer, TribeType eTribe, TeamType eVisibilityTeam, bool bTestHostileBlocking, bool bTestTerritory)
+        public override bool canUnitPass(UnitType eUnit, PlayerType ePlayer, TribeType eTribe, TeamType eVisibilityTeam, bool bTestHostileBlocking, bool bTestTerritory, bool bTestImpassable)
         {
-            bool baseResult = base.canUnitPass(eUnit, ePlayer, eTribe, eVisibilityTeam, bTestHostileBlocking, bTestTerritory);
+            bool baseResult = base.canUnitPass(eUnit, ePlayer, eTribe, eVisibilityTeam, bTestHostileBlocking, bTestTerritory, bTestImpassable);
             
             if (!semipassable())
                 return baseResult;

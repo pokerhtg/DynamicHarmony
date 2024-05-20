@@ -112,7 +112,7 @@ namespace DynamicUnits
                     distanceFactor += 200 / dist;
                 }
 
-                if (p.isTechValid(eTechnology))
+                if (p.isTechValid(eTechnology, true))
                 {
                     eligibleNations++;
                     totalDistFactor += 200 / dist;

@@ -417,7 +417,7 @@ namespace dynamicHarmony
                
                 if (debug && result)
                 {
-                    Debug.Log("pushed--------------");
+                    Debug.Log("pushed---------------");
                     Debug.Log(target.attackDamagePreview(pFromUnit, pFromTile, pFromUnit.player()) < target.getHP());
                     Debug.Log(pFromUnit.canAttackUnitOrCity(pFromTile, pToTile, null) && pFromTile.isTileAdjacent(pToTile));
                     Debug.Log(!pToTile.hasCity());
@@ -484,7 +484,7 @@ namespace dynamicHarmony
                     };
                     g.sendUnitMove(unitAction);
                    
-                    setTileID(__instance, impactFrom.getID());
+                    __instance.setTileID(pToTile.getID(), pActingPlayer);
                     __state = true;
                 }
                 if (isSkirmishing(__instance, pFromTile, pToUnit, out EffectUnitType why))
@@ -587,7 +587,7 @@ namespace dynamicHarmony
                 if (pToTile.defendingUnit() != null) //could be dead already
                     pToTile.defendingUnit().bounce();
 
-                setTileID(__instance, pToTile.getID());
+                 __instance.setTileID(pToTile.getID(), pActingPlayer);
             }
             
             [HarmonyPatch(nameof(Unit.canActMove), new Type[] { typeof(Player), typeof(int), typeof(bool) })]
@@ -611,14 +611,6 @@ namespace dynamicHarmony
                 __result = true; //can move
                 return false;
             }
-
-            [HarmonyReversePatch]
-            [HarmonyPatch(("setTileID"), new Type[] {typeof(int), typeof(bool), typeof(bool)})]
-            public static void setTileID(Unit unit, int iNewValue, bool bFinalMove = true, bool bLastStep = true)
-            {
-                throw new NotImplementedException("It's a stub");
-            }
-
         }
 
         [HarmonyPatch(typeof(Unit.UnitAI))]
@@ -751,7 +743,7 @@ namespace dynamicHarmony
 
             [HarmonyReversePatch]
             [HarmonyPatch("doMoveToBestTile")]
-            //protected virtual bool doMoveToBestTile(PathFinder pPathfinder, int iMaxSteps, Predicate<Tile> tileValid, Func<Tile, long> tileValue)
+            //doMoveToBestTile(PathFinder pPathfinder, int iMaxSteps, Predicate<Tile> tileValid, Func<Tile, long> tileValue)
             public static bool doMoveToBestTile(Unit.UnitAI ai, PathFinder pPathfinder, int iMaxSteps, Predicate<Tile> tileValid, Func<Tile, long> tileValue)
             {
                 throw new NotImplementedException("It's a stub");

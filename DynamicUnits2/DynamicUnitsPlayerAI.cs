@@ -33,7 +33,7 @@ namespace DynamicUnits
             AI_VP_VALUE -= 10 * offset;
             AI_UNIT_SCOUT_VALUE *= 2;
             AI_UNIT_LEVEL_VALUE *= 2;
-            AI_UNIT_PUSH_VALUE *= 2;
+            AI_UNIT_PUSH_VALUE *= 3;
             AI_UNIT_ROUT_VALUE *= 2;
             AI_ENLIST_ON_KILL_VALUE *= 2;
             AI_UNIT_LAST_STAND_VALUE *= 2;
@@ -51,13 +51,7 @@ namespace DynamicUnits
             AI_WASTED_EFFECT_VALUE = -offset;
             AI_MAX_FORT_BORDER_DISTANCE_INSIDE = 4;
         }
-       
-        protected override int getNoWonderTurns()
-        {
-            int unmodded = base.getNoWonderTurns();
-            return (unmodded + AI_NO_WONDER_TURNS) / 2;
 
-        }
         protected override bool isFoundCitySafe(Tile pTile)
         {
             if (getDistanceFromNationBorder(pTile) < infos.Globals.MIN_CITY_SITE_DISTANCE)
@@ -71,10 +65,15 @@ namespace DynamicUnits
         }
         protected override long calculateUnitValue(UnitType eUnit)
         {
-            //inmobile units worth less
+            
             long val = base.calculateUnitValue(eUnit);
-           
-            return infos.unit(eUnit).miMovement < 1 ? val / 8: val;
+            //inmobile units worth less
+            if (infos.unit(eUnit).miMovement < 1)
+                val /= 8;
+            //navy isn't as important as their land counterparts
+            if (isWarship(eUnit))
+                val /= 2; 
+                return val;
         }
         /**
         // public virtual int getWarOfferPercent(PlayerType eOtherPlayer, bool bDeclare = true, bool bPreparedOnly = false, bool bCurrentPlayer = true

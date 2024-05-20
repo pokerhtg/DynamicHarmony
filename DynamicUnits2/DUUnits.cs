@@ -136,8 +136,19 @@ namespace DynamicUnits
            return iValue;
        }
 
-       /// give some bonus xp before actually attacking; COMBAT_BASE_XP is expected to be drastically lowered--xp based on damage done, not kills
-       protected override int attackTile(Tile pFromTile, Tile pToTile, bool bTargetTile, int iAttackPercent, ref List<TileText> azTileTexts, out AttackOutcome eOutcome, ref bool bEvent)
+        /// give some bonus xp before actually attacking; COMBAT_BASE_XP is expected to be drastically lowered--xp based on damage done, not kills <summary>
+        /// give some bonus xp before actually attacking; COMBAT_BASE_XP is expected to be drastically lowered--xp based on damage done, not kills
+        /// </summary>
+        /// <param name="pFromTile"></param>
+        /// <param name="pToTile"></param>
+        /// <param name="bTargetTile"></param>
+        /// <param name="iAttackPercent"></param>
+        /// <param name="pActingPlayer"></param>
+        /// <param name="azTileTexts"></param>
+        /// <param name="eOutcome"></param>
+        /// <param name="bEvent"></param>
+        /// <returns></returns>
+        protected override int attackTile(Tile pFromTile, Tile pToTile, bool bTargetTile, int iAttackPercent, Player pActingPlayer, ref List<TileText> azTileTexts, out AttackOutcome eOutcome, ref bool bEvent)
        {
            int xp = -infos().Globals.COMBAT_BASE_XP;
            if (canDamageCity(pToTile))
@@ -166,7 +177,7 @@ namespace DynamicUnits
            }
          
            doXP(xp, ref azTileTexts);
-           return base.attackTile(pFromTile, pToTile, bTargetTile, iAttackPercent, ref azTileTexts, out eOutcome, ref bEvent);
+           return base.attackTile(pFromTile, pToTile, bTargetTile, iAttackPercent, pActingPlayer, ref azTileTexts, out eOutcome, ref bEvent);
        }
        
        //ignore tiny xp gains; reduce text notification noises
