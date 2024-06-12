@@ -87,6 +87,8 @@ namespace DynamicUnits
 
             int distanceFactor = 0;
             int knownNations = 0;
+            int uncontactedNation = 0;
+            int uncontactTechedNation = 0; //uncontacted nation that knows the tech
             int eligibleNations = 1;//a phantom! 
             int totalDistFactor = 1; //phantom lives 101-200 hexes away
 
@@ -96,7 +98,7 @@ namespace DynamicUnits
             for (PlayerType eLoopPlayer = 0; eLoopPlayer < game().getNumPlayers(); ++eLoopPlayer)
             {
                 Player p = game().player(eLoopPlayer);
-                if (!p.isAlive() || p == this)
+                if (p.isDead() || p == this)
                     continue;
 
                 var pCapital = p.capitalCity();
@@ -109,13 +111,25 @@ namespace DynamicUnits
                 if (p.isTechAcquired(eTechnology))
                 {
                     knownNations++;
-                    distanceFactor += 200 / dist;
+                    if (game().isTeamContact(this.getTeam(), p.getTeam()))
+                        distanceFactor += 200 / dist;
+                    else
+                    { 
+                        distanceFactor = 1;
+                        uncontactTechedNation++;
+                    }
                 }
 
                 if (p.isTechValid(eTechnology, true))
                 {
                     eligibleNations++;
-                    totalDistFactor += 200 / dist;
+                    if (game().isTeamContact(this.getTeam(), p.getTeam()))
+                        totalDistFactor += 200 / dist;
+                    else
+                    {
+                        totalDistFactor = 10;
+                        uncontactedNation++;
+                    }
                 }
             }
 
@@ -123,11 +137,17 @@ namespace DynamicUnits
 
             int difficulty = (int)getDifficulty();
             if (knownNations == 0)
-                discount -= 20; //no one else knows? 20% more expensive!
+                discount -= 10; //no one else knows? 10% more expensive!
             else discount += (10 - difficulty) * 2; //someone knows? you get a discount based on your difficulty
+
+            if (knownNations - uncontactTechedNation == 0) //no one you know knows? 20% more expensive!
+                discount -= 20;
+           
             discount -= (int)Math.Pow(difficulty, 1.8); //playing on harder difficulties? research gets harder (42% on Great)
 
-           
+            if (uncontactedNation > 0) //partial info displayed to players; let's limit discount 
+               discount = discount * uncontactedNation / eligibleNations; //let's slow down the roll to reduce confusion; 10% reduction per uncontacted nation
+
             if (infoTech.mbTrash)
                 discount += cost / 40; //discount by 1 extra percent for every 30 cost of science --so late game bonus cards are notably cheaper
             
@@ -135,8 +155,8 @@ namespace DynamicUnits
                 discount = (MAXDISCOUNT + discount) / 2;
             discount = Math.Min(MAXDISCOUNT, discount);
             why.Add(cost);
-            why.Add(knownNations);
-            why.Add(eligibleNations - 1);     //let's not display the phantom to player...may be too spooky
+            why.Add(knownNations - uncontactTechedNation);
+            why.Add(eligibleNations - 1 - uncontactedNation);     //let's not display the phantom to player...may be too spooky
             why.Add(discount);
 
             cost = infos().utils().modify(cost, -discount, true);

@@ -41,10 +41,10 @@ namespace DynamicUnits
             AI_UNIT_PROMOTE_VALUE *= 2;
             AI_UNIT_GENERAL_VALUE *= 2;
 
-            AI_YIELD_TURNS += 2 * offset;
+            AI_YIELD_TURNS += offset;
             AI_UNIT_RANDOM_PROMOTION_VALUE = AI_UNIT_PROMOTE_VALUE/2;
             
-            AI_TRADE_NETWORK_VALUE_ESTIMATE = 400 + 60*offset;
+            AI_TRADE_NETWORK_VALUE_ESTIMATE = 400 + 60 * offset;
             AI_BUILD_URBAN_VALUE *= 3;
             AI_IDLE_XP_VALUE /= 2;
             AI_CITY_REBEL_VALUE /= 2;

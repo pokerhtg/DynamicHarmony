@@ -104,7 +104,7 @@ namespace dynamicHarmony
                 {
                 
                     if (pToTile == null || pFromTile == null)
-                        return true;
+                        return false;
 
                     List<int> enemies = new List<int>();
                     pToTile.getAliveUnits(enemies);
@@ -129,12 +129,12 @@ namespace dynamicHarmony
                                     MohawkAssert.Assert(false, "Found a third tile; geometry is broken");
                             }
                         }
-                        if (candidate1 != null && candidate1.canUnitOccupy(unit, unit.getTeam(), true, true, true, false))
+                        if (candidate1 != null && candidate1.canUnitOccupy(unit, unit.getTeam(), true, true, true, false) )
                         {
-                            impactFrom= candidate1;
+                            impactFrom = candidate1;
                             return true;
                         }
-                        else if(candidate2 != null && candidate2.canUnitOccupy(unit, unit.getTeam(), true, true, true, false))
+                        else if(candidate2 != null && candidate2.canUnitOccupy(unit, unit.getTeam(), true, true, true, false) )
                         {
                             impactFrom = candidate2;
                             return true;
@@ -484,7 +484,7 @@ namespace dynamicHarmony
                     };
                     g.sendUnitMove(unitAction);
                    
-                    __instance.setTileID(pToTile.getID(), pActingPlayer);
+                    __instance.setTileID(impactFrom.getID(), pActingPlayer);
                     __state = true;
                 }
                 if (isSkirmishing(__instance, pFromTile, pToUnit, out EffectUnitType why))
