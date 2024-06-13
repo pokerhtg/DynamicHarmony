@@ -115,7 +115,7 @@ namespace DynamicUnits
                         distanceFactor += 200 / dist;
                     else
                     { 
-                        distanceFactor = 1;
+                        distanceFactor += 2;
                         uncontactTechedNation++;
                     }
                 }
@@ -127,13 +127,13 @@ namespace DynamicUnits
                         totalDistFactor += 200 / dist;
                     else
                     {
-                        totalDistFactor = 10;
+                        totalDistFactor += 10;
                         uncontactedNation++;
                     }
                 }
             }
 
-            int discount = 25 + MAXDISCOUNT * knownNations * distanceFactor / totalDistFactor / eligibleNations; //standard discount is 25%, compensated in globalsxml's tech cost, to make people feel better about getting a discount most of the time
+            int discount = MAXDISCOUNT * knownNations * distanceFactor / totalDistFactor / eligibleNations; 
 
             int difficulty = (int)getDifficulty();
             if (knownNations == 0)
@@ -145,8 +145,9 @@ namespace DynamicUnits
            
             discount -= (int)Math.Pow(difficulty, 1.8); //playing on harder difficulties? research gets harder (42% on Great)
 
-            if (uncontactedNation > 0) //partial info displayed to players; let's limit discount 
-               discount = discount * uncontactedNation / eligibleNations; //let's slow down the roll to reduce confusion; 10% reduction per uncontacted nation
+            discount = discount * (eligibleNations - uncontactedNation) / eligibleNations; //partial info displayed to players; let's limit discount let's slow down the roll to reduce confusion; uncontacted nations reduce the discount
+
+            discount += 25; //standard discount is 25%, compensated in globalsxml's tech cost, to make people feel better about getting a discount most of the time
 
             if (infoTech.mbTrash)
                 discount += cost / 40; //discount by 1 extra percent for every 30 cost of science --so late game bonus cards are notably cheaper
