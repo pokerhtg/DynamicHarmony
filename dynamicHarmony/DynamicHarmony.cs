@@ -383,7 +383,7 @@ namespace dynamicHarmony
                 if (bKite)
                 {
                     if (__instance.attackDamagePreview(pFromUnit, pFromTile, pFromUnit.player()) >= __instance.getHP() && //dead
-                          pFromUnit.canAdvanceAfterAttack(pFromTile, pToTile,__instance, true)) //and routing
+                          pFromUnit.canAdvanceAfterAttack(pFromTile, pToTile, __instance, true, pFromUnit.player())) //and routing bool canAdvanceAfterAttack(Tile pFromTile, Tile pToTile, Unit pDefendingUnit, bool bTestUnits, bool bCheckAdvance = true)
                         return true;
 
                     if (pFromUnit.canAttackUnitOrCity(pFromTile, pToTile, null) && !pFromUnit.isFatigued() && !pFromUnit.isMarch()) //kite condition: has moves left and hitting
@@ -452,7 +452,7 @@ namespace dynamicHarmony
                     if (debug)
                         Debug.Log("debug trace: entering harmony's AttackUnitorCity kite");
                     if (pToUnit.attackDamagePreview(__instance, pFromTile, __instance.player()) >= pToUnit.getHP() && //dead
-                       __instance.canAdvanceAfterAttack(pFromTile, pToTile, pToUnit, true)) //and routing
+                       __instance.canAdvanceAfterAttack(pFromTile, pToTile, pToUnit, true, pActingPlayer)) //and routing
                     {
                         //what a specific situation! Routing, so not running.
                     }
@@ -834,7 +834,7 @@ namespace dynamicHarmony
             {
                 using (new UnityProfileScope("HelpText.buildAttackLinkVariable"))
                 {
-                    InfoAttack infoAttack = __instance.ModSettings.Infos.attack(eAttack);
+                    InfoAttack infoAttack = infos(__instance).attack(eAttack);
 
                     if (infoAttack.mePattern == AttackPatternType.NONE)
                     {
@@ -850,11 +850,11 @@ namespace dynamicHarmony
             static void Prefix(TextBuilder builder, EffectUnitType eEffectUnit, HelpText __instance)
             {
 
-                Infos infos = __instance.ModSettings.Infos;
+                Infos info = infos(__instance);
                 try
                 {
-                    int moveSpecialCode = infos.effectUnit(eEffectUnit).maiAttackValue[infos.getType<AttackType>("MOVE_SPECIAL")];
-                    int chargeCode = infos.effectUnit(eEffectUnit).maiAttackValue[infos.getType<AttackType>("CHARGE")];
+                    int moveSpecialCode = info.effectUnit(eEffectUnit).maiAttackValue[info.getType<AttackType>("MOVE_SPECIAL")];
+                    int chargeCode = info.effectUnit(eEffectUnit).maiAttackValue[info.getType<AttackType>("CHARGE")];
                     if (moveSpecialCode == isSkirmisher)
                     {
                         builder.AddTEXT("TEXT_HELP_RETREAT_SHORT");
@@ -874,6 +874,13 @@ namespace dynamicHarmony
                     MohawkAssert.Assert(false, "Move Special not found; mod failed to unload? " + e.Message);
                     // harmony.UnpatchAll(MY_HARMONY_ID);
                 }
+            }
+
+            [HarmonyReversePatch]
+            [HarmonyPatch(typeof(HelpText), "infos")]
+            public static Infos infos(HelpText text)
+            {
+                throw new NotImplementedException("It's a stub");
             }
         }
 
@@ -956,7 +963,7 @@ namespace dynamicHarmony
                 if (pMouseoverTile == null)
                     return;
 
-                if (!pFromUnit.canTargetUnitOrCity(pMouseoverTile, true)) //if you can't target, you can't fire; so no friendly fire possible
+                if (!pFromUnit.canTargetUnitOrCity(pMouseoverTile, pFromUnit.player(), true)) //if you can't target, you can't fire; so no friendly fire possible
                     return;
 
                 if (city == null)
@@ -997,6 +1004,7 @@ namespace dynamicHarmony
             {
                 throw new NotImplementedException("It's a stub");
             }
+
         }
     }
 }

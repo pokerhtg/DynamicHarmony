@@ -1,5 +1,6 @@
 ﻿using TenCrowns.ClientCore;
 using TenCrowns.GameCore;
+using TenCrowns.GameCore.Text;
 
 namespace DynamicUnits
 {
@@ -25,9 +26,9 @@ namespace DynamicUnits
         {
             return new DUTiles();
         }
-        public override HelpText CreateHelpText(ModSettings pModSettings)
+        public override HelpText CreateHelpText(TextManager txtMgr)
         {
-            return new DUHelpText(pModSettings);
+            return new DUHelpText(txtMgr);
         }
         public override Game CreateGame(ModSettings pModSettings, IApplication pApp, bool bShowGame)
         {

@@ -22,25 +22,25 @@ namespace DynamicUnits
 
         }
        
-        public override bool impassable()
+      /**  public override bool impassable()
         {
             if (game().getTurn() < 2 && semipassable()) //at the beginning of the game, mountains are considered impassable--to help map gen
                 return true;
 
             return mpCurrentData.mTileData.isImpassable(infos());
             
-        }
-        public override bool canUnitPass(UnitType eUnit, PlayerType ePlayer, TribeType eTribe, TeamType eVisibilityTeam, bool bTestHostileBlocking, bool bTestTerritory, bool bTestImpassable)
+        }**/
+        public override bool canUnitPass(UnitType eUnit, PlayerType ePlayer, TribeType eTribe, TeamType eVisibilityTeam, bool bTestHostileBlocking, bool bTestTerritory, bool bTestImpassable, Unit pIgnoreUnit = null)
         {
-            bool baseResult = base.canUnitPass(eUnit, ePlayer, eTribe, eVisibilityTeam, bTestHostileBlocking, bTestTerritory, bTestImpassable);
+            bool baseResult = base.canUnitPass(eUnit, ePlayer, eTribe, eVisibilityTeam, bTestHostileBlocking, bTestTerritory, bTestImpassable, pIgnoreUnit); //mountain is passable; baseresult allows everyone to pass
             
-            if (!semipassable())
+            if (!semipassable()) //normal case, not mountain
                 return baseResult;
 
             var Helper = (DynamicUnitsInfoHelper)infos().Helpers;
             if (Helper.isMountaineer(eUnit))
             {
-                return baseResult;
+                return base.canUnitPass(eUnit, ePlayer, eTribe, eVisibilityTeam, bTestHostileBlocking, bTestTerritory, false);
             }
             else 
             {

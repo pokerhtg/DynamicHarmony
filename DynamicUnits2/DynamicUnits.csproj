@@ -50,7 +50,7 @@
     <Reference Include="System.Xml" />
     <Reference Include="TenCrowns.GameCore, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorldTestBranch\OldWorld_Data\Managed\TenCrowns.GameCore.dll</HintPath>
+      <HintPath>D:\STEAM\steamapps\common\Old World\OldWorld_Data\Managed\TenCrowns.GameCore.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorld\OldWorld_Data\Managed\UnityEngine.CoreModule.dll</HintPath>

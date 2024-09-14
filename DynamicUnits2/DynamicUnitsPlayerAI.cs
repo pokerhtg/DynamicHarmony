@@ -1,56 +1,58 @@
 ﻿using System;
+using System.Reflection;
 using TenCrowns.GameCore;
 using UnityEngine;
+using static TenCrowns.GameCore.Player;
 
 namespace DynamicUnits
 {
     internal class DynamicUnitsPlayerAI : Player.PlayerAI
     {
      
+        
+        int offset = 0;
+        protected override int AI_MAX_WATER_CONTROL_DISTANCE => 15;
+        protected override int AI_CULTURE_VALUE => 30 + offset;
+            protected override int AI_HAPPINESS_VALUE => base.AI_HAPPINESS_VALUE - 5 * offset;
+            protected override int AI_ORDERS_VALUE =>  base.AI_HAPPINESS_VALUE+ 10* offset;
+            protected override int AI_MONEY_VALUE => 7 + offset/2;
+            protected override int AI_TRAINING_VALUE => base.AI_TRAINING_VALUE- offset;
+            protected override int AI_GOODS_VALUE => base.AI_MONEY_VALUE* 4 + offset/3;
+            protected override int AI_MONEY_STOCKPILE_TURNS => base.AI_MONEY_STOCKPILE_TURNS * 2;
+            protected override int AI_NUM_GOODS_TARGET => 700 + 100 * offset;
+
+            protected override int AI_NO_WONDER_TURNS => 25 + offset * 2;
+            protected override int AI_WONDER_VALUE => base.AI_WONDER_VALUE - 50 * (20 - offset);
+            protected override int AI_VP_VALUE => base.AI_VP_VALUE- 10 * offset;
+            protected override int AI_UNIT_SCOUT_VALUE => base.AI_UNIT_SCOUT_VALUE* 2;
+            protected override int AI_UNIT_LEVEL_VALUE => base.AI_UNIT_LEVEL_VALUE* 2;
+            protected override int AI_UNIT_PUSH_VALUE => base.AI_UNIT_PUSH_VALUE *  3;
+            protected override int AI_UNIT_ROUT_VALUE => base.AI_UNIT_ROUT_VALUE* 2;
+            protected override int AI_ENLIST_ON_KILL_VALUE =>  base.AI_ENLIST_ON_KILL_VALUE * 2;
+            protected override int AI_UNIT_LAST_STAND_VALUE => base.AI_UNIT_LAST_STAND_VALUE* 2;
+            protected override int AI_UNIT_FORTIFY_VALUE => 100;
+            protected override int AI_UNIT_PROMOTE_VALUE => base.AI_UNIT_PROMOTE_VALUE * 2;
+            protected override int AI_UNIT_GENERAL_VALUE => base.AI_UNIT_GENERAL_VALUE * 2;
+
+            protected override int AI_YIELD_TURNS => base.AI_YIELD_TURNS + offset;
+            protected override int AI_UNIT_RANDOM_PROMOTION_VALUE => base.AI_UNIT_PROMOTE_VALUE/3*2;
+            
+           // protected override int AI_TRADE_NETWORK_VALUE_ESTIMATE = 400 + 60 * offset;
+            protected override int AI_BUILD_URBAN_VALUE => base.AI_BUILD_URBAN_VALUE * 3;
+          //  protected override int AI_IDLE_XP_VALUE /= 2;
+          //  protected override int AI_CITY_REBEL_VALUE /= 2;
+            protected override int AI_WASTED_EFFECT_VALUE => base.AI_WASTED_EFFECT_VALUE - offset;
+            protected override int AI_MAX_FORT_BORDER_DISTANCE_INSIDE => 4;
+
+
         public override void init(Game pGame, Player pPlayer, Tribe pTribe)
         {
             base.init(pGame, pPlayer, pTribe);
-            updateAIPriorities(pGame.randomNext(13));
-           
+            // updateAIPriorities(pGame.randomNext(13));
+            offset = pGame.randomNext(13) + 1;
         }
 
-        private void updateAIPriorities(int seed)
-        {
-            int offset = 1 + (seed % 13);  
-            AI_MAX_WATER_CONTROL_DISTANCE = 15;
-            //AI_GROWTH_VALUE -= offset;
-            AI_CULTURE_VALUE = 30 + offset;
-            AI_HAPPINESS_VALUE -= 5 * offset;
-            AI_ORDERS_VALUE += 10 * offset;
-            AI_MONEY_VALUE = 7 + offset/2;
-            AI_TRAINING_VALUE -= offset;
-            AI_GOODS_VALUE = AI_MONEY_VALUE * 4 + offset/3;
-            AI_MONEY_STOCKPILE_TURNS *= 2;
-            AI_NUM_GOODS_TARGET = 700 + 100 * offset;
-            AI_CHARACTER_OPINION_VALUE *= 2;
-            AI_NO_WONDER_TURNS = 15 + offset * 2;
-            AI_WONDER_VALUE -= 50 * (20 - offset);
-            AI_VP_VALUE -= 10 * offset;
-            AI_UNIT_SCOUT_VALUE *= 2;
-            AI_UNIT_LEVEL_VALUE *= 2;
-            AI_UNIT_PUSH_VALUE *= 3;
-            AI_UNIT_ROUT_VALUE *= 2;
-            AI_ENLIST_ON_KILL_VALUE *= 2;
-            AI_UNIT_LAST_STAND_VALUE *= 2;
-            AI_UNIT_FORTIFY_VALUE = 100;
-            AI_UNIT_PROMOTE_VALUE *= 2;
-            AI_UNIT_GENERAL_VALUE *= 2;
 
-            AI_YIELD_TURNS += offset;
-            AI_UNIT_RANDOM_PROMOTION_VALUE = AI_UNIT_PROMOTE_VALUE/2;
-            
-            AI_TRADE_NETWORK_VALUE_ESTIMATE = 400 + 60 * offset;
-            AI_BUILD_URBAN_VALUE *= 3;
-            AI_IDLE_XP_VALUE /= 2;
-            AI_CITY_REBEL_VALUE /= 2;
-            AI_WASTED_EFFECT_VALUE = -offset;
-            AI_MAX_FORT_BORDER_DISTANCE_INSIDE = 4;
-        }
 
         protected override bool isFoundCitySafe(Tile pTile)
         {

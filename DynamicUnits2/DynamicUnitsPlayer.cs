@@ -19,7 +19,6 @@ namespace DynamicUnits
             if (game().getTurn() != 1 && !bNewValue) //mid process turn is when this happens; also need to exclude first turn; pick later interacts with this surgery
                 convertExtraOrdersToCivics();
             base.processTurn();
-
         }
 
         private void convertExtraOrdersToCivics()
@@ -54,10 +53,15 @@ namespace DynamicUnits
         }
         public override int getTechCostWhole(TechType eTech)
         {
+           
+
             if (capitalCity() == null)
                 return base.getTechCostWhole(eTech);
             else
+            {
+             
                 return diffusedTechCost(eTech, out _);
+            }
         }
         protected override void doEventTriggers()
         {
@@ -115,7 +119,6 @@ namespace DynamicUnits
                         distanceFactor += 200 / dist;
                     else
                     { 
-                        distanceFactor += 2;
                         uncontactTechedNation++;
                     }
                 }
@@ -127,7 +130,6 @@ namespace DynamicUnits
                         totalDistFactor += 200 / dist;
                     else
                     {
-                        totalDistFactor += 10;
                         uncontactedNation++;
                     }
                 }
@@ -145,12 +147,12 @@ namespace DynamicUnits
            
             discount -= (int)Math.Pow(difficulty, 1.8); //playing on harder difficulties? research gets harder (42% on Great)
 
-            discount = discount * (eligibleNations - uncontactedNation) / eligibleNations; //partial info displayed to players; let's limit discount let's slow down the roll to reduce confusion; uncontacted nations reduce the discount
-
             discount += 25; //standard discount is 25%, compensated in globalsxml's tech cost, to make people feel better about getting a discount most of the time
 
+            discount = discount * (eligibleNations - uncontactedNation) / eligibleNations; //partial info displayed to players; let's limit discount let's slow down the roll to reduce confusion; uncontacted nations reduce the discount
+
             if (infoTech.mbTrash)
-                discount += cost / 40; //discount by 1 extra percent for every 30 cost of science --so late game bonus cards are notably cheaper
+                discount += cost / 40; //discount by 1 extra percent for every 40 cost of science --so late game bonus cards are notably cheaper
             
             if (eligibleNations == 1) //unique tech just for you
                 discount = (MAXDISCOUNT + discount) / 2;
@@ -162,7 +164,7 @@ namespace DynamicUnits
 
             cost = infos().utils().modify(cost, -discount, true);
             techCostCache.Add(key, (cost, why));
-
+          //  Debug.Log("finished difufsing " + infoTech.mName + " at " + cost);
             return cost;
         }
        

@@ -45,8 +45,10 @@ namespace DynamicUnits
         public bool isMountaineer(UnitType eUnit)
         {
             //a nonwater unit that can anchor is a mountaineer
+
+            InfoUnit unit = mInfos.unit(eUnit);
             
-            return mInfos.unit(eUnit).mbAnchor && (!mInfos.unit(eUnit).mbWater && !mInfos.unit(eUnit).mbAmphibious);
+            return unit.mbAnchor && !unit.mbWater && !unit.mbAmphibious;
         }
     }
 

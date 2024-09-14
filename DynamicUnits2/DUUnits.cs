@@ -24,7 +24,7 @@ namespace DynamicUnits
         {
             if (pTile.isWater())
                 return base.canAnchor(pActingPlayer, pTile, bTestEnabled);
-            else if (pTile.getHeight() == infos().getType<HeightType>("HEIGHT_MOUNTAIN"))
+            else if (((DUTiles) pTile).semipassable())
             {
                 //mountaineer code
                 if (!(info().mbAnchor))
@@ -51,7 +51,7 @@ namespace DynamicUnits
                 }
                 return true;
             }
-            return false; 
+            return false; //not water, not mountain
         }
      
         public override bool isHigherTileDefender(Unit pOtherUnit)
@@ -77,8 +77,8 @@ namespace DynamicUnits
 
             ReleasePool<List<int>>.AcquireScope acquireScope = CollectionCache.GetListScoped<int>();
             List<int> value = acquireScope.Value;
-            if (tile().getHeight() == infos().getType<HeightType>("HEIGHT_MOUNTAIN"))
-                pFromTile.getContiguous((Tile tile) => tile.getHeight() == infos().getType<HeightType>("HEIGHT_MOUNTAIN") && tile.distanceTile(pFromTile) <= waterControl(), value);
+            if (((DUTiles) tile()).semipassable())
+                pFromTile.getContiguous((Tile tile) => ((DUTiles) tile).semipassable() && tile.distanceTile(pFromTile) <= waterControl(), value);
             else 
                 pFromTile.getContiguous((Tile tile) => tile.isWater() && tile.distanceTile(pFromTile) <= waterControl(), value);
             foreach (int item in value)
@@ -97,12 +97,7 @@ namespace DynamicUnits
                 return false;
             return base.canMarchEver();
         }
-        public override bool canSwapUnits(Tile pTile, Player pActingPlayer, bool bMarch)
-        {
-            if (movement() < 0)
-                return false;
-            return base.canSwapUnits(pTile, pActingPlayer, bMarch); 
-        }
+
         
         public override bool hasPush(Tile pToTile)
         {
@@ -219,7 +214,5 @@ namespace DynamicUnits
               return Math.Min(iDamage, iToUnitHP);
           }
       }
-
-
     }
 }
