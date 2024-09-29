@@ -41,6 +41,8 @@ namespace DynamicUnits
             return base.canStack(eUnit);
         }
 
+        
+
         //begin new methods
         public bool isMountaineer(UnitType eUnit)
         {
@@ -50,6 +52,7 @@ namespace DynamicUnits
             
             return unit.mbAnchor && !unit.mbWater && !unit.mbAmphibious;
         }
+
     }
 
 }

@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Mohawk.SystemCore;
+using System;
 using System.Reflection;
+using System.Xml.Linq;
 using TenCrowns.GameCore;
 using UnityEngine;
 using static TenCrowns.GameCore.Player;
@@ -8,51 +10,38 @@ namespace DynamicUnits
 {
     internal class DynamicUnitsPlayerAI : Player.PlayerAI
     {
-     
-        
-        int offset = 0;
+
+
+        protected int offset => player == null? 5: (player.getCapitalCityID() + player.getFounderID()) % 13  + 1; //1-13
         protected override int AI_MAX_WATER_CONTROL_DISTANCE => 15;
-        protected override int AI_CULTURE_VALUE => 30 + offset;
-            protected override int AI_HAPPINESS_VALUE => base.AI_HAPPINESS_VALUE - 5 * offset;
-            protected override int AI_ORDERS_VALUE =>  base.AI_HAPPINESS_VALUE+ 10* offset;
-            protected override int AI_MONEY_VALUE => 7 + offset/2;
-            protected override int AI_TRAINING_VALUE => base.AI_TRAINING_VALUE- offset;
-            protected override int AI_GOODS_VALUE => base.AI_MONEY_VALUE* 4 + offset/3;
-            protected override int AI_MONEY_STOCKPILE_TURNS => base.AI_MONEY_STOCKPILE_TURNS * 2;
-            protected override int AI_NUM_GOODS_TARGET => 700 + 100 * offset;
+        protected override int AI_CULTURE_VALUE => 30 + offset; 
+        protected override int AI_HAPPINESS_VALUE => base.AI_HAPPINESS_VALUE - 5 * offset;
+        protected override int AI_ORDERS_VALUE =>  base.AI_ORDERS_VALUE + 20 * offset;
+        protected override int AI_MONEY_VALUE => 7 + offset/2;
+        protected override int AI_TRAINING_VALUE => base.AI_TRAINING_VALUE- offset;
+        protected override int AI_GOODS_VALUE => AI_MONEY_VALUE * 4 + offset/3;
+        protected override int AI_MONEY_STOCKPILE_TURNS => base.AI_MONEY_STOCKPILE_TURNS + offset;
+        protected override int AI_NUM_GOODS_TARGET => base.AI_NUM_GOODS_TARGET + 20 * offset;
 
-            protected override int AI_NO_WONDER_TURNS => 25 + offset * 2;
-            protected override int AI_WONDER_VALUE => base.AI_WONDER_VALUE - 50 * (20 - offset);
-            protected override int AI_VP_VALUE => base.AI_VP_VALUE- 10 * offset;
-            protected override int AI_UNIT_SCOUT_VALUE => base.AI_UNIT_SCOUT_VALUE* 2;
-            protected override int AI_UNIT_LEVEL_VALUE => base.AI_UNIT_LEVEL_VALUE* 2;
-            protected override int AI_UNIT_PUSH_VALUE => base.AI_UNIT_PUSH_VALUE *  3;
-            protected override int AI_UNIT_ROUT_VALUE => base.AI_UNIT_ROUT_VALUE* 2;
-            protected override int AI_ENLIST_ON_KILL_VALUE =>  base.AI_ENLIST_ON_KILL_VALUE * 2;
-            protected override int AI_UNIT_LAST_STAND_VALUE => base.AI_UNIT_LAST_STAND_VALUE* 2;
-            protected override int AI_UNIT_FORTIFY_VALUE => 100;
-            protected override int AI_UNIT_PROMOTE_VALUE => base.AI_UNIT_PROMOTE_VALUE * 2;
-            protected override int AI_UNIT_GENERAL_VALUE => base.AI_UNIT_GENERAL_VALUE * 2;
+        protected override int AI_NO_WONDER_TURNS => base.AI_NO_WONDER_TURNS + offset;
+        protected override int AI_WONDER_VALUE => base.AI_WONDER_VALUE - 50 * (13 - offset); //300 is the base; so this makes wonders' innate value around zero
+        protected override int AI_VP_VALUE => base.AI_VP_VALUE - 30 * offset; //800
+        protected override int AI_UNIT_SCOUT_VALUE => base.AI_UNIT_SCOUT_VALUE + offset;
 
-            protected override int AI_YIELD_TURNS => base.AI_YIELD_TURNS + offset;
-            protected override int AI_UNIT_RANDOM_PROMOTION_VALUE => base.AI_UNIT_PROMOTE_VALUE/3*2;
+        protected override int AI_UNIT_GENERAL_VALUE => base.AI_UNIT_GENERAL_VALUE + 20 * offset;
+
+        protected override int AI_YIELD_TURNS => base.AI_YIELD_TURNS + offset;
+        protected override int AI_UNIT_RANDOM_PROMOTION_VALUE => base.AI_UNIT_PROMOTE_VALUE/3*2;
             
-           // protected override int AI_TRADE_NETWORK_VALUE_ESTIMATE = 400 + 60 * offset;
-            protected override int AI_BUILD_URBAN_VALUE => base.AI_BUILD_URBAN_VALUE * 3;
-          //  protected override int AI_IDLE_XP_VALUE /= 2;
-          //  protected override int AI_CITY_REBEL_VALUE /= 2;
-            protected override int AI_WASTED_EFFECT_VALUE => base.AI_WASTED_EFFECT_VALUE - offset;
-            protected override int AI_MAX_FORT_BORDER_DISTANCE_INSIDE => 4;
-
-
-        public override void init(Game pGame, Player pPlayer, Tribe pTribe)
-        {
-            base.init(pGame, pPlayer, pTribe);
-            // updateAIPriorities(pGame.randomNext(13));
-            offset = pGame.randomNext(13) + 1;
-        }
-
-
+        protected override int AI_TRADE_NETWORK_VALUE_ESTIMATE => base.AI_TRADE_NETWORK_VALUE_ESTIMATE + 100 * offset;
+        protected override int AI_BUILD_URBAN_VALUE => base.AI_BUILD_URBAN_VALUE + 3 * offset;
+        //  protected override int AI_IDLE_XP_VALUE /= 2;
+        //  protected override int AI_CITY_REBEL_VALUE /= 2;
+        protected override int AI_WASTED_EFFECT_VALUE => base.AI_WASTED_EFFECT_VALUE - offset;
+        protected override int AI_MAX_FORT_BORDER_DISTANCE_INSIDE => base.AI_MAX_FORT_BORDER_DISTANCE_INSIDE + offset/2;
+        protected override int AI_MAX_FORT_RIVAL_BORDER_DISTANCE => base.AI_MAX_FORT_RIVAL_BORDER_DISTANCE + (12-offset);
+        protected override int AI_MAX_FORT_BORDER_DISTANCE_OUTSIDE => AI_MAX_FORT_BORDER_DISTANCE_INSIDE/2;
+        
 
         protected override bool isFoundCitySafe(Tile pTile)
         {
@@ -65,9 +54,14 @@ namespace DynamicUnits
             //defense structures aren't that important
             return base.getFortValue(eImprovement, pTile)*2/3;  
         }
+        protected override long getRoadValue(City pCity, bool bMovement, bool bConnection, bool bRemove, City pOtherCity)
+        {
+            //road connections are way more valuable than vanilla
+            return base.getRoadValue(pCity, bMovement, bConnection, bRemove, pOtherCity) * (bConnection? 2: 5);
+        }
         protected override long calculateUnitValue(UnitType eUnit)
         {
-            
+           
             long val = base.calculateUnitValue(eUnit);
             //inmobile units worth less
             if (infos.unit(eUnit).miMovement < 1)

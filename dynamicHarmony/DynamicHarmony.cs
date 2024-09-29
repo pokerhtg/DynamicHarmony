@@ -38,6 +38,12 @@ namespace dynamicHarmony
             harmony = null;
          
         }
+
+        private static bool attackedThisTurn(Unit unit)
+        {
+            return unit.getCooldown() == unit.game().infos().Globals.ATTACK_COOLDOWN ||
+                unit.getCooldown() == unit.game().infos().Globals.ROUT_COOLDOWN;
+        }
         //decoding special effects from aiAttackValue's MOVE_SPECIAL
         static readonly int isSkirmisher = -1;
         static readonly int isKite = -2;
@@ -265,7 +271,7 @@ namespace dynamicHarmony
             ///for Charge
             static void Prefix(Unit __instance, Unit pFromUnit, ref Tile pMouseoverTile)
             {
-                if (isCharge(pFromUnit, out Tile fromTile, pMouseoverTile, __instance.tile()))
+                if (isCharge(pFromUnit, out Tile fromTile, pMouseoverTile, __instance.tile()) && !pMouseoverTile.hasHostileUnit(__instance.getTeam()))
                 {
                     pMouseoverTile = fromTile;
                 }
@@ -328,7 +334,7 @@ namespace dynamicHarmony
                                             //melee units don't do much friendly fire...
                                             atkPercent /= 3;
                                         }
-                                        __result += pFromUnit.attackUnitDamage(pFromTile, __instance, false, atkPercent, bCheckOurUnits:false);
+                                        __result += pFromUnit.attackUnitDamage(pFromTile, __instance, false, atkPercent, bCheckOurUnits:true);
                                         if (__result >= __instance.getHP())
                                             __result = __instance.getHP() -1; //friendly fire is now no longer deadly
                                        
@@ -596,8 +602,7 @@ namespace dynamicHarmony
             static bool Prefix(ref Unit __instance, ref bool __result)
             {
 
-                if (__instance.getCooldown() != __instance.game().infos().Globals.ATTACK_COOLDOWN) //if didn't attack, normal
-                                                                                                  
+                if (!attackedThisTurn(__instance)) //if didn't attack, normal                                                                                            
                     return true;
                 if (getSpecialMove(__instance.getEffectUnits(), __instance.game().infos(), out _) != isKite) //if not kite, normal. //may want to catch the out and display text
                 {
@@ -732,14 +737,13 @@ namespace dynamicHarmony
             ///kite AI aid--teach 'em how to say goodbye
            static void Postfix(ref Unit.UnitAI __instance, Unit ___unit, ref Func<Tile, long> ___retreatValueDelegate,  Game ___game, PathFinder pPathfinder)
             {
-              //RUN! 
+                //RUN! 
                 if (___retreatValueDelegate == null)
                     ___retreatValueDelegate = new Func<Tile, long>(__instance.retreatTileValue);
-                
-                if (PatchUnitBehaviors.getSpecialMove(___unit.getEffectUnits(), ___game.infos(), out _) == isKite && !___unit.isFatigued() && ___unit.getCooldown() == ___game.infos().Globals.ATTACK_COOLDOWN)
-                doMoveToBestTile(__instance, pPathfinder, ___unit.getStepsToFatigue(), null, ___retreatValueDelegate); 
+
+                if (PatchUnitBehaviors.getSpecialMove(___unit.getEffectUnits(), ___game.infos(), out _) == isKite && !___unit.isFatigued() && attackedThisTurn(___unit))
+                    doMoveToBestTile(__instance, pPathfinder, ___unit.getStepsToFatigue(), null, ___retreatValueDelegate);
             }
-         
 
             [HarmonyReversePatch]
             [HarmonyPatch("doMoveToBestTile")]
@@ -895,7 +899,7 @@ namespace dynamicHarmony
             static bool Prefix(ref IApplication ___APP, Unit pUnit, Tile pTile)
             {
                 ClientManager ClientMgr = ___APP.GetClientManager();
-                if (pUnit.getCooldown() != ClientMgr?.Infos.Globals.ATTACK_COOLDOWN)
+                if (!attackedThisTurn(pUnit))
                     return true;
             
                 if (PatchUnitBehaviors.getSpecialMove(pUnit.getEffectUnits(), ClientMgr?.Infos, out _) != isKite) //if not kite, normal.
@@ -909,6 +913,7 @@ namespace dynamicHarmony
                
                 ClientMgr.sendMoveUnit(pUnit, pTile, false, false, ClientMgr.Selection.getSelectedUnitWaypoint());
                 ClientMgr.Selection.setSelectedUnitWaypoint(null);
+
                 return false;
             }
 

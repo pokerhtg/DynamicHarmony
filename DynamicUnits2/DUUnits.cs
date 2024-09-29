@@ -63,6 +63,8 @@ namespace DynamicUnits
             
             return tileDefendValue() > ((DUUnits) pOtherUnit).tileDefendValue();
         }
+
+
         protected override int tileDefendValue()
         {
             return modifiedDefense() + getHP() * 2;

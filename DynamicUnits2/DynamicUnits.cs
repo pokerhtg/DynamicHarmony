@@ -10,7 +10,6 @@ namespace DynamicUnits
         public override void Initialize(ModSettings modSettings)
         {
             modSettings.Factory = new DynamicUnitsFactory();
-            
         }
     }
 }

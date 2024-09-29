@@ -123,6 +123,7 @@
     <Compile Include="DUGame.cs" />
     <Compile Include="DUHelpText.cs" />
     <Compile Include="DUTiles.cs" />
+    <Compile Include="DynamicUnitsAI.cs" />
     <Compile Include="DynamicUnits.cs" />
     <Compile Include="DynamicUnitsFactory.cs" />
     <Compile Include="DynamicUnitsInfoHelper.cs" />

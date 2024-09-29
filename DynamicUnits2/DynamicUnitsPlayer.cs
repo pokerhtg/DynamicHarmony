@@ -147,7 +147,7 @@ namespace DynamicUnits
            
             discount -= (int)Math.Pow(difficulty, 1.8); //playing on harder difficulties? research gets harder (42% on Great)
 
-            discount += 25; //standard discount is 25%, compensated in globalsxml's tech cost, to make people feel better about getting a discount most of the time
+            discount += 30; //standard discount is 25%, compensated in globalsxml's tech cost, to make people feel better about getting a discount most of the time
 
             discount = discount * (eligibleNations - uncontactedNation) / eligibleNations; //partial info displayed to players; let's limit discount let's slow down the roll to reduce confusion; uncontacted nations reduce the discount
 
@@ -156,6 +156,8 @@ namespace DynamicUnits
             
             if (eligibleNations == 1) //unique tech just for you
                 discount = (MAXDISCOUNT + discount) / 2;
+            discount *= 5;
+            discount /= 6; //slightly scale down discount
             discount = Math.Min(MAXDISCOUNT, discount);
             why.Add(cost);
             why.Add(knownNations - uncontactTechedNation);
@@ -249,14 +251,41 @@ namespace DynamicUnits
                 {
                     if (pUnit.canDamage())
                     {
-                        strength -= 10; //in DU, having more unit isn't as inherently good as it is in base
-                        strength += pUnit.getLevel() * 5; //in DU, level is especially important because of HP boost and promotion buff
-                        strength += pUnit.range() * pUnit.range(); //in DU, long ranged units often have powers beyond raw strength--eg AoE
+                        strength -= 30; //in DU, having more unit isn't as inherently good as it is in base
+                        strength += pUnit.getLevel() * 10; //in DU, level is especially important because of HP boost and promotion buff
+                        strength += 5* pUnit.range() * pUnit.range(); //in DU, long ranged units often have powers beyond raw strength--eg AoE
                     }
                 }
             }
 
             return strength;
+        }
+        protected override void doUnitMoveQueue()
+        {
+            base.doUnitMoveQueue();
+            if (!isHuman())
+            {
+                //hijack to fix (slightly cheat for AI) issue where not all units that can attack would attack, resulting in AI looking super dumb
+                for (int i = 0; i < getNumUnits(); ++i) 
+                {     
+                    Unit pUnit = unitAt(i);
+                    if (pUnit != null)
+                    {
+                         if (pUnit.isAlive() && pUnit.canDamage() && !pUnit.hasCooldown())
+                        {
+                            Tile targetTile = pUnit.AI.getTargetTile();
+                            if (pUnit.AI.canTargetTileThisTurn(targetTile, pUnit.tile()))
+                            {
+                                pUnit.attackUnitOrCity(targetTile, this);
+                            }
+                            else { 
+                                ((DUUnitAI) pUnit.AI).AttackFromCurrentTile(false);
+                            }
+                            //Debug.Log("bonus attacked " + targetTile);
+                        }
+                    }
+                }
+            }
         }
         public override int countTeamWars()
         {
