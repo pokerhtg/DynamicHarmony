@@ -85,69 +85,76 @@ namespace dynamicHarmony
                 }
                 return AttackType.NONE;
             }
-            public static bool isCharge(Unit unit, out Tile impactFrom, Tile pFromTile=null, Tile pToTile=null)
+            public static bool tryCharge(Unit unit, out Tile impactFrom, Tile pFromTile=null, Tile pToTile=null)
             {
                 ///TODO: use attack value's Value from xml...to denote the max charge distance? Right now all charges are defined to have range of exactly 2
                 impactFrom = null;
-                if (unit == null)
+                if (unit == null || pToTile == null || pFromTile == null || !unit.info().mbMelee)
                     return false;
                
                 bool isCharge = false;
-                var info = unit.game().infos();
-                AttackType chargeIndex = AttackIndex("CHARGE", info);
+                Game g = unit.game();
+                AttackType chargeIndex = AttackIndex("CHARGE", g.infos());
                 
                 if (chargeIndex!= AttackType.NONE)
                     foreach (EffectUnitType eLoopEffectUnit in unit.getEffectUnits())
                     {
-                        int iSubValue = info.effectUnit(eLoopEffectUnit)?.maiAttackValue[chargeIndex] ?? 0;
+                        int iSubValue = g.infos().effectUnit(eLoopEffectUnit)?.maiAttackValue[chargeIndex] ?? 0;
                         if (iSubValue != 0)
                         {
                             isCharge = true;
+                            break;
                         }
                     }
                
-                if (unit.info().mbMelee && isCharge) 
+                if (isCharge) 
                 {
-                
-                    if (pToTile == null || pFromTile == null)
-                        return false;
-
                     List<int> enemies = new List<int>();
                     pToTile.getAliveUnits(enemies);
+                    if (enemies.Count != 1)
+                        return false; //can only charge if there is exactly one enemy on a tile
+                    Unit target = g.unit(enemies.First());
 
-                    if (!pToTile.hasCity() && enemies.Count == 1 && ((pToTile.improvement()?.miDefenseModifier?? 0) < 1) && pFromTile.distanceTile(pToTile) == 2 //here's that "2" referred to in the TODO above
+                    if (!pToTile.hasCity() && ((pToTile.improvement()?.miDefenseModifier?? 0) < 1) && pFromTile.distanceTile(pToTile) == 2 //here's that "2" referred to in the TODO above
                         && (pToTile.defendingUnit()?.movement() ?? -1) > 0 && pToTile.canUnitOccupy(unit, unit.getTeam(), false, false, true, false)
-                        && !unit.game().unit(enemies.First()).isWorker() ) //charging against worker, who could be making a wonder, is pretty OP. Banned!
+                        && !target.isWorker() ) //charging against worker, who could be making a wonder, is pretty OP. Banned!
                     {
                         List<int> adjTiles = new List<int>();
                         pFromTile.getTilesAtDistance(1, adjTiles, false);
                         Tile candidate1 = null, candidate2 =null;
-                        for (int i = 0; i < adjTiles.Count; i++)
+                       
+                        foreach (int iAdj in adjTiles)
                         {
-                            Tile friend = unit.game().tile(adjTiles[i]);
-                            if (pToTile.isTileAdjacent(friend))
+                            Tile adjTile = g.tile(iAdj);
+                            if (pToTile.isTileAdjacent(adjTile))
                             {
-                                if (candidate1 == null)
-                                    candidate1 = friend;
-                                else if (candidate2 == null)
-                                    candidate2 = friend;
-                                else
-                                    MohawkAssert.Assert(false, "Found a third tile; geometry is broken");
+                                if (adjTile.canUnitOccupy(unit, unit.getTeam(), true, true, true, false))
+                                {
+                                    if (candidate1 == null)
+                                        candidate1 = adjTile;
+                                    else if (candidate2 == null)
+                                        candidate2 = adjTile;
+                                    else
+                                        MohawkAssert.Assert(false, "Found a third tile; geometry is broken");
+                                }
                             }
                         }
-                        if (candidate1 != null && candidate1.canUnitOccupy(unit, unit.getTeam(), true, true, true, false) )
+                      
+                        if (candidate2 != null) //two options, pick the best
+                        {
+                            int dmg1 = unit.attackUnitDamage(candidate1, target, false);
+                            int dmg2 = unit.attackUnitDamage(candidate2, target, false);
+                            impactFrom = dmg1 > dmg2 ? candidate1 : candidate2; //attack from the tile with higher damage; candidate 2 wins ties just because. Not considering counterdamage or anything else
+                            return true;
+                        }
+                        else if(candidate1 != null) //one option, pick it
                         {
                             impactFrom = candidate1;
                             return true;
                         }
-                        else if(candidate2 != null && candidate2.canUnitOccupy(unit, unit.getTeam(), true, true, true, false) )
-                        {
-                            impactFrom = candidate2;
-                            return true;
-                        }
                     }
                 }
-
+               
                 return false;
             }
 
@@ -237,7 +244,7 @@ namespace dynamicHarmony
             ///charge! gives greater attack range, sort of
             static void Postfix(ref Unit __instance, Tile pFromTile, ref List<int> aiTargetTiles)
             {
-                if (isCharge(__instance, out _))
+                if (tryCharge(__instance, out _))
                 {
                     int iNumValidTilesAtRange = 0;
                     using (var listScoped = CollectionCache.GetListScoped<int>())
@@ -247,7 +254,7 @@ namespace dynamicHarmony
                         foreach (int iLoopTile in listScoped.Value)
                         { 
                             Tile pToTile = __instance.game().tile(iLoopTile);
-                            if (isCharge(__instance, out _, pFromTile, pToTile)) 
+                            if (tryCharge(__instance, out _, pFromTile, pToTile)) 
                             {
                                 ++iNumValidTilesAtRange;
                                 aiTargetTiles.Add(iLoopTile);
@@ -263,7 +270,7 @@ namespace dynamicHarmony
             {
                 if (__result)
                     return;
-                if (isCharge(__instance, out _, pFromTile, pToTile))
+                if (tryCharge(__instance, out _, pFromTile, pToTile))
                     __result = true;
 
             }
@@ -271,7 +278,7 @@ namespace dynamicHarmony
             ///for Charge
             static void Prefix(Unit __instance, Unit pFromUnit, ref Tile pMouseoverTile)
             {
-                if (isCharge(pFromUnit, out Tile fromTile, pMouseoverTile, __instance.tile()) && !pMouseoverTile.hasHostileUnit(__instance.getTeam()))
+                if (tryCharge(pFromUnit, out Tile fromTile, pMouseoverTile, __instance.tile()) && !pMouseoverTile.hasHostileUnit(__instance.getTeam()))
                 {
                     pMouseoverTile = fromTile;
                 }
@@ -361,7 +368,7 @@ namespace dynamicHarmony
                 bool bKite = isKite == specialMoveCodeAttacker;
                 bool special = false;
 
-                if (isCharge(pFromUnit, out _, pFromTile, pToTile))
+                if (tryCharge(pFromUnit, out _, pFromTile, pToTile))
                 {
                     var charge = g.HelpText.getGenderedEffectUnitName(g.infos().effectUnit(getEffectName(pFromUnit.getEffectUnits(), "CHARGE", g.infos())), pFromUnit.getGender());
                     builder.AddTEXT(charge);
@@ -468,7 +475,7 @@ namespace dynamicHarmony
                         SendTileTextAll(g.HelpText.TEXT(g.infos().effectUnit(hitNRunEff).mName), pFromTile.getID(), g);       
                     }               
                 }
-                if (isCharge(__instance, out Tile impactFrom, pFromTile, pToTile))
+                if (tryCharge(__instance, out Tile impactFrom, pFromTile, pToTile))
                 {
                     if (debug)
                         Debug.Log("debug trace: entering harmony's AttackUnitorCity charge");
@@ -678,7 +685,7 @@ namespace dynamicHarmony
             {
                 try
                 {
-                    if (PatchUnitBehaviors.isCharge(___unit, out _))
+                    if (PatchUnitBehaviors.tryCharge(___unit, out _))
                     {
                         int iNumValidTilesAtRange = 0;
                         using (var listScoped = CollectionCache.GetListScoped<int>())
@@ -710,7 +717,7 @@ namespace dynamicHarmony
                 }
                 catch (Exception)
                 {
-                    return false; //a literal catch all solution--the method causes some null pointer...somewhere
+                    return false; //a literal catch all solution--the method causes some null pointer...somewhere TODO fix me
                 }
             }
 
@@ -926,7 +933,7 @@ namespace dynamicHarmony
                 var pSelectedUnit = ClientMgr.Selection.getSelectedUnit();
                 Tile pMouseoverTile = ClientMgr.Selection.getAttackPreviewTile();
 
-                if (PatchUnitBehaviors.isCharge(pSelectedUnit, out Tile newFrom, pSelectedUnit.tile(), pMouseoverTile))
+                if (PatchUnitBehaviors.tryCharge(pSelectedUnit, out Tile newFrom, pSelectedUnit.tile(), pMouseoverTile))
                 {
                     phantom = newFrom;
                     phantomDelay = 2; //this magic number depends on the IL code and where the assignment we want to change is happening within the method
