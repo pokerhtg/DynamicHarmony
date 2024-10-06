@@ -12,6 +12,4 @@ namespace DynamicUnits
             modSettings.Factory = new DynamicUnitsFactory();
         }
     }
-
-    //battlefield promotion
 }

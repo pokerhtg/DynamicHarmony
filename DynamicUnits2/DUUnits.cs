@@ -1,8 +1,10 @@
 ﻿using Mohawk.SystemCore;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using TenCrowns.GameCore;
 using UnityEngine;
+using UnityEngine.Assertions.Must;
 
 namespace DynamicUnits
 {
@@ -147,40 +149,114 @@ namespace DynamicUnits
         /// <returns></returns>
         protected override int attackTile(Tile pFromTile, Tile pToTile, bool bTargetTile, int iAttackPercent, Player pActingPlayer, ref List<TileText> azTileTexts, out AttackOutcome eOutcome, ref bool bEvent)
        {
-           int xp = -infos().Globals.COMBAT_BASE_XP;
-           if (canDamageCity(pToTile))
-               xp += infos().Globals.BASE_DAMAGE + attackCityDamage(pFromTile, pToTile.city(), iAttackPercent);
-           Unit pDefendingUnit = pToTile.defendingUnit();
-         
-           if (pDefendingUnit != null && canDamageUnit(pDefendingUnit))
-           {
-               int estimate = attackUnitDamage(pFromTile, pDefendingUnit, false, iAttackPercent); //no crit, but also unlimited by actual remaining HP
-               if (game().isHostileUnit(getTeam(), TribeType.NONE, pDefendingUnit))
-               {
-                   if (estimate > infos().Globals.BASE_DAMAGE) //good job, above expected
-                       xp += pDefendingUnit.getLevel() * 2;
-                   xp += estimate + (estimate < pDefendingUnit.getHP() ? 0 : pDefendingUnit.getHPMax()); //either gain xp based on estimate, or a bit more for kill bonus
-                  
-                   if (bTargetTile)
-                   { //main attack, not a AoE
-                       xp += info().mbMelee ? pDefendingUnit.modifiedStrength() / 10 : infos().Globals.BASE_DAMAGE;
-                   }
-                   else
-                   {
-                       xp *= 150;
-                       xp /= 100;
-                   }
-               }
-           }
-         
-           doXP(xp, ref azTileTexts);
+            try
+            {
+                int xp = -infos().Globals.COMBAT_BASE_XP;
+                if (canDamageCity(pToTile))
+                    xp += infos().Globals.BASE_DAMAGE + attackCityDamage(pFromTile, pToTile.city(), iAttackPercent);
+                Unit pDefendingUnit = pToTile.defendingUnit();
+
+                if (pDefendingUnit != null && canDamageUnit(pDefendingUnit))
+                {
+                    int estimate = attackUnitDamage(pFromTile, pDefendingUnit, false, iAttackPercent); //no crit, but also unlimited by actual remaining HP
+                    if (game().isHostileUnit(getTeam(), TribeType.NONE, pDefendingUnit))
+                    {
+                        if (estimate > infos().Globals.BASE_DAMAGE) //good job, above expected
+                            xp += pDefendingUnit.getLevel() * 2;
+                        xp += estimate + (estimate < pDefendingUnit.getHP() ? 0 : pDefendingUnit.getHPMax()); //either gain xp based on estimate, or a bit more for kill bonus
+
+                        if (bTargetTile)
+                        { //main attack, not a AoE
+                            xp += info().mbMelee ? pDefendingUnit.modifiedStrength() / 10 : infos().Globals.BASE_DAMAGE;
+                        }
+                        else
+                        {
+                            xp *= 150;
+                            xp /= 100;
+                        }
+                    }
+                }
+                bool promoted = false;
+                // Debug.Log(String.Format("{0}/{1} chance for battlefield promotion", xp, 50 * getEffectUnitCount()));
+                if (xp >= randomNext(33 * getEffectUnitCount())) //not fair, but units with too many effects get overwhelming, so let's curb that. 
+                {
+                    //battlefield promotion
+                    //promote (without adding to unit level) instead of gaining xp. promotion should be the one most useful against the unit you just attacked
+                    List<PromotionType> goodPool = new List<PromotionType>();
+                    PromotionType ePromotion;
+                    for (ePromotion = (PromotionType)0; ePromotion < infos().promotionsNum(); ePromotion++)
+                    {
+                        if (infos().promotion(ePromotion).mbUpgrade && !hasPromotionAvailable(ePromotion) && isPromotionValid(ePromotion))
+                        {
+
+                            InfoPromotion promotion = infos().promotion(ePromotion);
+                            if (promotion == null)
+                                break;
+                            //check situations, add suitable ones to goodPool, then pick one at random
+                            if (promotion.meEffectUnit != EffectUnitType.NONE)
+                            {
+                                //check if good; if so, add value to list, otherwise continue
+                                var e = infos().effectUnit(promotion.meEffectUnit);
+
+                                if (e.maiHeightFromModifier.Get(tile().getHeight()) > 0 ||
+                                    e.maiImprovementToModifier.Get(pToTile.getImprovement()) > 0 ||
+                                    e.maiVegetationFromModifier.Get(tile().getVegetation()) > 0 ||
+                                   (e.miDamagedUsModifier > 0 && isDamaged() && randomNext(3) == 0) ||
+                                   (e.miFatigueExtra > 0 && isFatigued() && randomNext(2) == 0) ||
+                                   (e.miHasGeneralModifier > 0 && hasGeneral() && randomNext(3) == 0) ||
+                                   (e.miHomeModifier > 0 && pFromTile.hasOwner() && getPlayer() == pFromTile.getOwner()) ||
+                                   (e.miRiverAttackModifier > 0 && pFromTile.isRiverCrossing(pToTile)) ||
+                                   (e.miUrbanAttackModifier > 0 && pToTile.isUrban()) ||
+                                   (e.miWaterLandAttackModifier > 0 && pFromTile.isWater() != pToTile.isWater()) ||
+                                   validAgainstDefender(e, pDefendingUnit, pFromTile, pToTile) ||
+                                   (e.miSettlementAttackModifier > 0 && pToTile.hasCity())
+                                 )
+                                {
+                                    goodPool.Add(ePromotion);
+                                }
+                               
+                            }
+                        }
+                    }
+
+                    if (goodPool.Count > 0)
+                    {
+                        var bonusPromotion = goodPool[randomNext(goodPool.Count)];
+                        addPromotion(bonusPromotion);
+                        promoted = true;
+
+                        //   Debug.Log("battlefield promotion!");
+                        if (hasPlayer())
+                            game().sendTileText(new TileText("+" + HelpText.TEXT(infos().promotion(bonusPromotion).mName), pFromTile.getID(), getPlayer()));
+                    }
+                }
+                if (!promoted)
+                    doXP(xp, ref azTileTexts);
+            }
+            catch (Exception e) {
+                Debug.LogError(e.StackTrace);
+            }
            return base.attackTile(pFromTile, pToTile, bTargetTile, iAttackPercent, pActingPlayer, ref azTileTexts, out eOutcome, ref bEvent);
        }
-       
-       //ignore tiny xp gains; reduce text notification noises
-       protected override void doXP(int multiplier, ref List<TileText> azTileTexts)
+
+        private bool validAgainstDefender(InfoEffectUnit e, Unit pDefendingUnit, Tile pFromTile, Tile pToTile)
+        {
+            if (pDefendingUnit == null)
+            {
+
+                return false;
+            }
+            else return (e.miDamagedThemModifier > 0 && pDefendingUnit.isDamaged() && randomNext(4) == 0) || 
+                        (e.miFlankingAttackModifier > 0 && pFromTile.flankingAttack(pDefendingUnit, pToTile)) || 
+                        (e.miVsGeneralModifier > 0 && pDefendingUnit.hasGeneral());
+        }
+
+        protected override void doXP(int multiplier, ref List<TileText> azTileTexts)
        {
-           if (multiplier > infos().Globals.BASE_DAMAGE/2) 
+            if (multiplier <= infos().Globals.BASE_DAMAGE / 2) //ignore tiny xp gains; reduce text notification noises. Also means base game attack xp gains are ignored
+                return;
+         
+            else 
                base.doXP(multiplier, ref azTileTexts);
        }
        

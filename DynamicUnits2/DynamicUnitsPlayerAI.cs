@@ -71,6 +71,12 @@ namespace DynamicUnits
                 val /= 2; 
                 return val;
         }
+
+        protected override long citizenValue(City pCity, bool bRemove)
+        {
+            return base.citizenValue(pCity, bRemove) / 2;//DU and DW both makes citizen more of a problem; AI should value them less.
+        }
+
         /**
         // public virtual int getWarOfferPercent(PlayerType eOtherPlayer, bool bDeclare = true, bool bPreparedOnly = false, bool bCurrentPlayer = true
         public override int getWarOfferPercent(PlayerType eOtherPlayer, bool bDeclare, bool bPreparedOnly = false, bool bCurrentPlayer = true)
