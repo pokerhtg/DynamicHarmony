@@ -16,10 +16,14 @@ namespace DynamicUnits
         {
             var result = base.buildUnitTypeHelp(builder, eUnit, pCity, pPlayer, eTribe, pGame, pActivePlayer, bName, bCosts, bStats, bDetails);
             var Helper = (DynamicUnitsInfoHelper)infos().Helpers;
-         //   if (mInfos.unit(eUnit).mbAmphibious)
-       //     {
-       //       builder.AddTEXT("TEXT_HELPTEXT_AMPHIBIOUS");
-        //    }
+            if (mInfos.unit(eUnit).mbAmphibious)
+            {
+              builder.AddTEXT("TEXT_HELPTEXT_AMPHIBIOUS");
+            }
+            if (Helper.isMountaineer(eUnit))
+            {
+                builder.AddTEXT("TEXT_HELPTEXT_MOUNTAIN_TRAVERSAL");
+            }
             return result;
         }
 

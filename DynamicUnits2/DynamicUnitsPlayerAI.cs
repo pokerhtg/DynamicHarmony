@@ -52,7 +52,7 @@ namespace DynamicUnits
         public override long getFortValue(ImprovementType eImprovement, Tile pTile)
         {
             //defense structures aren't that important
-            return base.getFortValue(eImprovement, pTile)*2/3;  
+            return base.getFortValue(eImprovement, pTile)/2;  
         }
         protected override long getRoadValue(City pCity, bool bMovement, bool bConnection, bool bRemove, City pOtherCity)
         {

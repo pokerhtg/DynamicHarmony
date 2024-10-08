@@ -31,6 +31,10 @@ namespace DynamicUnits
         {
             return new DUTiles();
         }
+        public override Tribe CreateTribe()
+        {
+            return new DUTribes();
+        }
         public override HelpText CreateHelpText(TextManager txtMgr)
         {
             return new DUHelpText(txtMgr);

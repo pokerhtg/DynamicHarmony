@@ -87,14 +87,14 @@ namespace DynamicUnits
 
             int cost = infos().utils().modify(infoTech.miCost, infos().Globals.TECH_GLOBAL_MODIFIER);
 
-            const int MAXDISCOUNT = 93; //won't end up this high, thanks to integer division, plus the spooky phantom 1 tile away
+            const int MAXDISCOUNT = 96; //won't end up this high, thanks to integer division, plus the spooky phantom 1 tile away
 
             int distanceFactor = 0;
             int knownNations = 0;
             int uncontactedNation = 0;
             int uncontactTechedNation = 0; //uncontacted nation that knows the tech
             int eligibleNations = 1;//a phantom! 
-            int totalDistFactor = 1; //phantom lives 101-200 hexes away
+            int totalDistFactor = 2; //phantom lives 140 hexes away
 
             why = new List<int>();
             var capital = capitalCity().tile();
@@ -116,7 +116,7 @@ namespace DynamicUnits
                 {
                     knownNations++;
                     if (game().isTeamContact(this.getTeam(), p.getTeam()))
-                        distanceFactor += 200 / dist;
+                        distanceFactor += 300 / dist;
                     else
                     { 
                         uncontactTechedNation++;
@@ -127,7 +127,7 @@ namespace DynamicUnits
                 {
                     eligibleNations++;
                     if (game().isTeamContact(this.getTeam(), p.getTeam()))
-                        totalDistFactor += 200 / dist;
+                        totalDistFactor += 300 / dist;
                     else
                     {
                         uncontactedNation++;
@@ -147,7 +147,7 @@ namespace DynamicUnits
            
             discount -= (int)Math.Pow(difficulty, 1.8); //playing on harder difficulties? research gets harder (42% on Great)
 
-            discount += 30; //standard discount is 25%, compensated in globalsxml's tech cost, to make people feel better about getting a discount most of the time
+            discount += 45; //standard discount is 45%, compensated in globalsxml's tech cost, to make people feel better about getting a discount most of the time
 
             discount = discount * (eligibleNations - uncontactedNation) / eligibleNations; //partial info displayed to players; let's limit discount let's slow down the roll to reduce confusion; uncontacted nations reduce the discount
 
@@ -156,9 +156,9 @@ namespace DynamicUnits
             
             if (eligibleNations == 1) //unique tech just for you
                 discount = (MAXDISCOUNT + discount) / 2;
-            discount *= 5;
-            discount /= 6; //slightly scale down discount
+           
             discount = Math.Min(MAXDISCOUNT, discount);
+            discount = Math.Max(0,discount); //worst case is no discount, not negative discount
             why.Add(cost);
             why.Add(knownNations - uncontactTechedNation);
             why.Add(eligibleNations - 1 - uncontactedNation);     //let's not display the phantom to player...may be too spooky

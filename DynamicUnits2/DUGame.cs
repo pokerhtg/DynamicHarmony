@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Mohawk.SystemCore;
+using System;
+using System.Collections.Generic;
 using TenCrowns.ClientCore;
 using TenCrowns.GameCore;
 
@@ -42,10 +44,11 @@ namespace DynamicUnits
             int perception = ((DynamicUnitsPlayer)firstTeamPlayer(eIndex1)).desirePeace(firstTeamPlayer(eIndex2).getPlayer());
             var rawWarScore = mpCurrentData.maaiTeamWarScore[(int)eIndex1, (int)eIndex2];
             int perceiptionWeight = 3;
+            int realityWeight = 2;
             //30 year war gives standard desire for peace. shorter wars aren't as conclusive so desire is closer to 0
             int conclusivePercent = (70 + getTeamConflictNumTurns(eIndex1, eIndex2));
 
-            return (perceiptionWeight * perception + rawWarScore) * conclusivePercent / 100;
+            return (perceiptionWeight * perception + realityWeight * rawWarScore) / realityWeight * conclusivePercent / 100;
         }
 
         public override bool canAddTrait(TraitType eTrait, Character pCharacter, CharacterType eCharacter, bool bTestPrereqs = false, bool bNoFallback = true, bool bSetArchetype = false)
@@ -70,40 +73,43 @@ namespace DynamicUnits
             }
         }
         //Tribal allies shall raid and not fight barbs!
-        /**
-        public override void setTribeDiplomacy(TribeType eIndex1, TeamType eIndex2, DiplomacyType eNewValue, bool bAnnounce)
-        {
-            base.setTribeDiplomacy(eIndex1, eIndex2, eNewValue, bAnnounce);
-        }
         public override bool canTribeRaid(TribeType eTribe, TeamType eTeam)
         {
+            //deep copy with one change
             if (eTribe != TribeType.NONE && eTribe != infos().Globals.RAIDERS_TRIBE)
             {
                 if (!infos().tribe(eTribe).mbDiplomacy)
                 {
                     return false;
                 }
-
                 if (!isTribeContact(eTribe, eTeam))
                 {
                     return false;
                 }
-
                 if (tribeDiplomacy(eTribe, eTeam).mbPeace)
                 {
                     return false;
                 }
-                //tribes with allies can still raid
-                
-                                if (hasTribeAlly(eTribe))
-                                {
-                                    return false;
-                                }
-                
+                if (hasTribeAlly(eTribe))
+                {
+                    //here's that change!
+          //          return false;
+                }
             }
-
             return true;
         }
-        **/
+
+        public override bool isHostile(TeamType eTeam1, TribeType eTribe1, TeamType eTeam2, TribeType eTribe2)
+        {
+            //a diplomlatic tribe can never be hostile toward a nondiplomatic one and vice versa
+            if (eTribe1 != TribeType.NONE && eTribe2 != TribeType.NONE && infos().tribe(eTribe1).mbDiplomacy != infos().tribe(eTribe2).mbDiplomacy)
+                { return false; }
+
+            return infos().diplomacy(getDiplomacy(eTeam1, eTribe1, eTeam2, eTribe2)).mbHostile;
+        }
+        
+
+        //END BLOCK of code to allow tribes to raid
+
     }
 }

@@ -85,13 +85,13 @@ namespace dynamicHarmony
                 }
                 return AttackType.NONE;
             }
-            public static bool tryCharge(Unit unit, out Tile impactFrom, Tile pFromTile=null, Tile pToTile=null)
+            public static bool tryCharge(Unit unit, out Tile impactFrom, Tile pFromTile, Tile pToTile)
             {
                 ///TODO: use attack value's Value from xml...to denote the max charge distance? Right now all charges are defined to have range of exactly 2
                 impactFrom = null;
-                if (unit == null || pToTile == null || pFromTile == null || !unit.info().mbMelee)
+                if (unit == null  || !unit.info().mbMelee)
                     return false;
-               
+
                 bool isCharge = false;
                 Game g = unit.game();
                 AttackType chargeIndex = AttackIndex("CHARGE", g.infos());
@@ -109,6 +109,11 @@ namespace dynamicHarmony
                
                 if (isCharge) 
                 {
+                    if (pToTile == null || pFromTile == null)
+                    {
+                        //no specific target or location, but since this is charge, we'll return a generic true to mean the unit can charge, if there's a valid target.
+                        return true;
+                    }
                     List<int> enemies = new List<int>();
                     pToTile.getAliveUnits(enemies);
                     if (enemies.Count != 1)
@@ -244,7 +249,7 @@ namespace dynamicHarmony
             ///charge! gives greater attack range, sort of
             static void Postfix(ref Unit __instance, Tile pFromTile, ref List<int> aiTargetTiles)
             {
-                if (tryCharge(__instance, out _))
+                if (tryCharge(__instance, out _, pFromTile, null))
                 {
                     int iNumValidTilesAtRange = 0;
                     using (var listScoped = CollectionCache.GetListScoped<int>())
@@ -276,13 +281,38 @@ namespace dynamicHarmony
             }
             [HarmonyPatch(nameof(Unit.attackDamagePreview))]
             ///for Charge
-            static void Prefix(Unit __instance, Unit pFromUnit, ref Tile pMouseoverTile)
+            static bool Prefix(ref Unit __instance, ref int __result, Unit pFromUnit, ref Tile pMouseoverTile)
             {
-                if (tryCharge(pFromUnit, out Tile fromTile, pMouseoverTile, __instance.tile()) && !pMouseoverTile.hasHostileUnit(__instance.getTeam()))
+                var currTile = __instance.tile();
+                Tile impactTile;
+                if (currTile == pMouseoverTile && currTile.hasHostileUnit(pFromUnit.getTeam()) && tryCharge(pFromUnit, out impactTile, pFromUnit.tile(), currTile))
                 {
-                    pMouseoverTile = fromTile;
+                    
+                    //already in position for charge; mousing over me
+                    __result = pFromUnit.attackUnitDamage(impactTile, __instance, bCritical: false);
+                    return false;
+                    
                 }
+
+                else if (__instance != pFromUnit && pMouseoverTile != currTile && tryCharge(pFromUnit, out impactTile, pMouseoverTile, currTile))
+                {
+                    //mouseover a hex from where the unit can attack me
+                    pMouseoverTile = impactTile; //fake the mouseover tile, then let the damage preview take ove
+                    return true;
+                }
+                
+                
+                if (__instance == pFromUnit && pMouseoverTile.hasHostileUnit(pFromUnit.getTeam()) && tryCharge(pFromUnit, out Tile impact, currTile, pMouseoverTile) ) {
+                    //this is from attacker's PoV. already in position, mousing over the enemy, calculating counterdamage to self
+                   // Debug.Log("calculating counter damage from tile "+ impact + " against tile " + pMouseoverTile+ ", for unit standing on " + currTile);
+                    __result = pFromUnit.getCounterAttackDamage(impact, pMouseoverTile.defendingUnit(), pMouseoverTile);
+                    return false;
+                }
+                //not charge, let the default handle it
+                return true;
+
             }
+           
             [HarmonyPatch(nameof(Unit.attackDamagePreview))]
             ///for friendly fire
             static void Postfix(ref int __result, Unit __instance, Unit pFromUnit, Tile pMouseoverTile, bool bCheckHostile)
@@ -685,7 +715,7 @@ namespace dynamicHarmony
             {
                 try
                 {
-                    if (PatchUnitBehaviors.tryCharge(___unit, out _))
+                    if (PatchUnitBehaviors.tryCharge(___unit, out _, null, null))
                     {
                         int iNumValidTilesAtRange = 0;
                         using (var listScoped = CollectionCache.GetListScoped<int>())
@@ -697,7 +727,7 @@ namespace dynamicHarmony
 
                                 if (___unit.at(pMoveTile) || ___unit.canAct(___unit.player()))
                                 {
-                                    if (___unit.canTargetTile(pMoveTile, pTargetTile))
+                                    if (___unit.canTargetTile(pMoveTile, pTargetTile)) //this calls and checks tryCharge for a more specific to/from combo
                                     {
                                         ++iNumValidTilesAtRange;
                                         if (___unit.canOccupyTile(pMoveTile, ___unit.getTeam(), bTestUnits, bTestUnits, false))
@@ -899,7 +929,8 @@ namespace dynamicHarmony
         public class PatchClient
         {
             static Tile phantom;
-            static int phantomDelay = 0;
+            static Unit targetUnit;
+        //    static int phantomDelay = 0;
             [HarmonyPatch(typeof(ClientInput), nameof(ClientInput.moveTo))]
             // public virtual void moveTo(Unit pUnit, Tile ownTile)
             ///outside of gamecore, so be very careful here. Client level g logic control in base g...tsk tsk. Changing it to make Kiting work
@@ -936,26 +967,30 @@ namespace dynamicHarmony
                 if (PatchUnitBehaviors.tryCharge(pSelectedUnit, out Tile newFrom, pSelectedUnit.tile(), pMouseoverTile))
                 {
                     phantom = newFrom;
-                    phantomDelay = 2; //this magic number depends on the IL code and where the assignment we want to change is happening within the method
-                   
+               //     phantomDelay = 2; //this magic number depends on the IL code and where the assignment we want to change is happening within the method
+                    targetUnit = pSelectedUnit;
                 }
             }
 
             [HarmonyPatch(typeof(Unit), nameof(Unit.tile))]
             // public virtual void updateUnitAttackPreviewSelection()
             /// second half of patching preview by setting the location of the phantom tile to be injected into the method later
-            static void Postfix(ref Tile __result)
+            static void Postfix(ref Unit __instance, ref Tile __result)
             {
                 if (phantom == null)
                     return;
-                else if (phantomDelay > 1)
-                {
-                    phantomDelay--;
+                if (__instance != targetUnit)
                     return;
-                }
-              //  MohawkAssert.Assert(false, "phantom assigned: instead of " + __result.getX() + ", " + __result.getY() + ", we pretend the tile is at (" + phantom.getX() + ", " + phantom.getY() );
+           //     MohawkAssert.Assert(false, "phantom assigned: instead of " + __result.getX() + ", " + __result.getY() + ", we pretend the tile is at (" + phantom.getX() + ", " + phantom.getY() );
                 __result = phantom;
-                phantomDelay = 0;
+               
+            }
+            [HarmonyPatch(typeof(ClientUI), nameof(ClientUI.updateUnitAttackPreviewSelection))]
+            // public virtual void updateUnitAttackPreviewSelection()
+            /// clean up the temp variables
+            static void Postfix()
+            {
+                targetUnit = null;
                 phantom = null;
             }
 

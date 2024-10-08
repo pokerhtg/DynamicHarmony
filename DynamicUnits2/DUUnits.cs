@@ -178,7 +178,7 @@ namespace DynamicUnits
                 }
                 bool promoted = false;
                 // Debug.Log(String.Format("{0}/{1} chance for battlefield promotion", xp, 50 * getEffectUnitCount()));
-                if (xp >= randomNext(33 * getEffectUnitCount())) //not fair, but units with too many effects get overwhelming, so let's curb that. 
+                if (xp >= randomNext(30 * getEffectUnitCount())) //not fair, but units with too many effects get overwhelming, so let's curb that. 
                 {
                     //battlefield promotion
                     //promote (without adding to unit level) instead of gaining xp. promotion should be the one most useful against the unit you just attacked
@@ -209,7 +209,8 @@ namespace DynamicUnits
                                    (e.miUrbanAttackModifier > 0 && pToTile.isUrban()) ||
                                    (e.miWaterLandAttackModifier > 0 && pFromTile.isWater() != pToTile.isWater()) ||
                                    validAgainstDefender(e, pDefendingUnit, pFromTile, pToTile) ||
-                                   (e.miSettlementAttackModifier > 0 && pToTile.hasCity())
+                                   (e.miSettlementAttackModifier > 0 && pToTile.hasCity())      ||
+                                   hasEffectUnitClass(e.meClass)
                                  )
                                 {
                                     goodPool.Add(ePromotion);
@@ -225,9 +226,16 @@ namespace DynamicUnits
                         addPromotion(bonusPromotion);
                         promoted = true;
 
-                        //   Debug.Log("battlefield promotion!");
+                        // Debug.Log("earned a battlefield promotion");
+
                         if (hasPlayer())
-                            game().sendTileText(new TileText("+" + HelpText.TEXT(infos().promotion(bonusPromotion).mName), pFromTile.getID(), getPlayer()));
+                        {
+                            game().sendTileText(new TileText("+ " + HelpText.TEXT(infos().promotion(bonusPromotion).mName)+"!", pFromTile.getID(), getPlayer()));
+                            
+                            player().pushLogData(() => TextManager.TEXT("TEXT_GAME_UNIT_BATTLEFIELD_PROMOTION", HelpText.buildUnitNameVariable(this, game(), true), HelpText.buildPromotionLinkVariable(bonusPromotion)), GameLogType.UNIT_CAPTURED, pToTile.getID(), infos().unit(getType()), pFromTile.getID());
+                       //     player().pushLogData(() => TextManager.TEXT("TEXT_GAME_CITY_ATTACKED_LOG_DATA", HelpText.buildCityLinkVariable(pTargetCity, pTargetPlayer), HelpText.buildUnitOwnerLinkVariable(this, game(), pTargetPlayer), HelpText.buildUnitLinkVariable(this, pTargetPlayer), HelpText.buildYieldValueIconLinkVariable(infos().Globals.DISCONTENT_YIELD, infos().Globals.CITY_ATTACKED_DISCONTENT, true, false, Constants.YIELDS_MULTIPLIER)), GameLogType.CITY_ATTACKED, pTargetCity.getTileID(), infos().unit(getType()), pFromTile.getID());
+
+                        }
                     }
                 }
                 if (!promoted)
@@ -241,9 +249,10 @@ namespace DynamicUnits
 
         private bool validAgainstDefender(InfoEffectUnit e, Unit pDefendingUnit, Tile pFromTile, Tile pToTile)
         {
+            //future implementation: against defender's unit traits
+            //e.maiUnitTraitModifier and its 3 cousins, loop through all enemy unit's traits
             if (pDefendingUnit == null)
             {
-
                 return false;
             }
             else return (e.miDamagedThemModifier > 0 && pDefendingUnit.isDamaged() && randomNext(4) == 0) || 
