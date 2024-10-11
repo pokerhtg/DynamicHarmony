@@ -15,8 +15,7 @@ namespace DynamicUnits
 				return base.isProtectedTile(pTile, bAfterAttack, iMinPowerPercent, iExtraDanger = 0);
 			}
 			catch (Exception)
-			{
-				
+			{			
 				return true;
 			}
 		}

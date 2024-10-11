@@ -210,7 +210,7 @@ namespace DynamicUnits
                                    (e.miWaterLandAttackModifier > 0 && pFromTile.isWater() != pToTile.isWater()) ||
                                    validAgainstDefender(e, pDefendingUnit, pFromTile, pToTile) ||
                                    (e.miSettlementAttackModifier > 0 && pToTile.hasCity())      ||
-                                   hasEffectUnitClass(e.meClass)
+                                   (e.meClass != EffectUnitClassType.NONE && hasEffectUnitClass(e.meClass))
                                  )
                                 {
                                     goodPool.Add(ePromotion);

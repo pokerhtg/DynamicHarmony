@@ -975,15 +975,14 @@ namespace dynamicHarmony
             [HarmonyPatch(typeof(Unit), nameof(Unit.tile))]
             // public virtual void updateUnitAttackPreviewSelection()
             /// second half of patching preview by setting the location of the phantom tile to be injected into the method later
-            static void Postfix(ref Unit __instance, ref Tile __result)
+            static bool Prefix(ref Unit __instance, ref Tile __result)
             {
                 if (phantom == null)
-                    return;
+                    return true;
                 if (__instance != targetUnit)
-                    return;
-           //     MohawkAssert.Assert(false, "phantom assigned: instead of " + __result.getX() + ", " + __result.getY() + ", we pretend the tile is at (" + phantom.getX() + ", " + phantom.getY() );
+                    return true;
                 __result = phantom;
-               
+                return false;         
             }
             [HarmonyPatch(typeof(ClientUI), nameof(ClientUI.updateUnitAttackPreviewSelection))]
             // public virtual void updateUnitAttackPreviewSelection()

@@ -41,7 +41,10 @@ namespace DynamicUnits
             return base.canStack(eUnit);
         }
 
-        
+        public override bool isEmergencyUnit(UnitType eUnit)
+        {
+            return base.isEmergencyUnit(eUnit) || !mInfos.unit(eUnit).mbGeneral; //no general is a sign of emergency unit; update me once a better flag is available
+        }
 
         //begin new methods
         public bool isMountaineer(UnitType eUnit)
