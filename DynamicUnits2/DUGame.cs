@@ -23,6 +23,14 @@ namespace DynamicUnits
                     h.mbImpassable = false;
                 }
             }
+            foreach (Tile t in allTiles()) {
+                if (t.hasOwner() && t.hasImprovement()) {
+                    if (t.improvement().mbTribe)
+                    {
+                        t.clearImprovement();
+                    }  
+                }
+            }
         }
         public override bool initFromMapScript(GameParameters pGameParams, MapBuilder pMapBuilder)
         {
@@ -55,7 +63,7 @@ namespace DynamicUnits
         {
             if (pCharacter == null)
                 return false;
-            if (infos().trait(eTrait).mbRemoveNonLeader && !pCharacter.isLeader() && !pCharacter.isHeir())
+            if (infos().trait(eTrait).mbRemoveNonLeader && !pCharacter.isLeaderOrSuccessor())
                 return false;
             return base.canAddTrait(eTrait, pCharacter, eCharacter, bTestPrereqs, bNoFallback, bSetArchetype);
         }

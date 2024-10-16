@@ -86,8 +86,10 @@ namespace DynamicUnits
         public override void updateCityDanger()
         { 
             base.updateCityDanger();
-       //     if (player != null && player.capitalCity()!= null)
-         //       Debug.Log(player.capitalCity().getPlayerInt() + " 's offset is " + offset);
+            //     if (player != null && player.capitalCity()!= null)
+            //       Debug.Log(player.capitalCity().getPlayerInt() + " 's offset is " + offset);
+            if (player == null)
+                return;
             foreach (int iLoopCity in player.getCities())
             {
                 var rebelChance = game.city(iLoopCity).calculateRebelProb();
@@ -105,11 +107,10 @@ namespace DynamicUnits
             if (result)
                 if (!pUnit.isScout() && pUnit.hasPlayer() && pUnit.player().capitalCity() != null)
                 {  //not a scout, has a capital
-
                     var dstanceAllowed = pUnit.movement() * pUnit.getFatigueLimit() * (5 * player.countMilitaryUnits() + game.getTurn()) / 25 / (pUnit.AI.isBelowHealthPercent(80) ? 3 : 2);//and want to venture too far from your own land? 
                     if (dstanceAllowed > maxDistanceALlowed)
                         maxDistanceALlowed = dstanceAllowed;
-                    if (pUnit.movement() < 1 || pUnit.player().AI.getDistanceFromTerritory(pToTile) > maxDistanceALlowed)       //once a distance is allowed, don't ever unallow it, unless territory shrinks, then oh well.                                    
+                    if (pUnit.movement() < 1 || pUnit.player().AI.getClosestCityDistance(pToTile) > maxDistanceALlowed)       //once a distance is allowed, don't ever unallow it, unless territory shrinks, then oh well.                                    
                         return false;
                 }
             return result;
@@ -117,8 +118,13 @@ namespace DynamicUnits
 
         protected override int calculateTargetMilitaryUnitNumber()
         {
-            var economySupport = base.calculateTargetMilitaryUnitNumber() * (6 - getYieldShortages().Count) / 5 ; // no shortage? get 6/5 x the military since you can afford it! a lot of shortage? fewer units because you are too bankrupt
-            return economySupport + player.countTeamWars() * 3 + countUnits(x => x.getXP() < 50) / 2; //3 more unit per war; units with less than 50 xp count as half a unit
+            var target = base.calculateTargetMilitaryUnitNumber();
+            DictionaryList<YieldType, int> shortages = getYieldShortages();
+            if (shortages != null)
+                target *= (6 - shortages.Count) / 5 ; // no shortage? get 6/5 x the military since you can afford it! a lot of shortage? fewer units because you are too bankrupt
+            if (player != null) 
+                target += player.countTeamWars() * 3 + countUnits(x => x?.getXP() < 50) / 2; //3 more unit per war; units with less than 50 xp count as half a unit
+            return target;
         }
             /**
             // public virtual int getWarOfferPercent(PlayerType eOtherPlayer, bool bDeclare = true, bool bPreparedOnly = false, bool bCurrentPlayer = true

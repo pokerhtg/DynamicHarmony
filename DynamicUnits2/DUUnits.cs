@@ -178,7 +178,7 @@ namespace DynamicUnits
                 }
                 bool promoted = false;
                 // Debug.Log(String.Format("{0}/{1} chance for battlefield promotion", xp, 50 * getEffectUnitCount()));
-                if (xp >= randomNext(30 * getEffectUnitCount())) //not fair, but units with too many effects get overwhelming, so let's curb that. 
+                if (xp >= randomNext(35 * getEffectUnitCount())) //not fair, but units with too many effects get overwhelming, so let's curb that. 
                 {
                     //battlefield promotion
                     //promote (without adding to unit level) instead of gaining xp. promotion should be the one most useful against the unit you just attacked
@@ -198,17 +198,17 @@ namespace DynamicUnits
                                 //check if good; if so, add value to list, otherwise continue
                                 var e = infos().effectUnit(promotion.meEffectUnit);
 
-                                if (e.maiHeightFromModifier.Get(tile().getHeight()) > 0 ||
+                                if ((e.maiHeightFromModifier.Get(tile().getHeight()) > 0 && randomNext(2) == 0)||
                                     e.maiImprovementToModifier.Get(pToTile.getImprovement()) > 0 ||
-                                    e.maiVegetationFromModifier.Get(tile().getVegetation()) > 0 ||
-                                   (e.miDamagedUsModifier > 0 && isDamaged() && randomNext(3) == 0) ||
-                                   (e.miFatigueExtra > 0 && isFatigued() && randomNext(2) == 0) ||
+                                   (e.maiVegetationFromModifier.Get(tile().getVegetation()) > 0 && randomNext(2) == 0) ||
+                                   (e.miDamagedUsModifier > 0 && isDamaged() && randomNext(4) == 0) ||
+                                   (e.miFatigueExtra > 0 && isFatigued() && randomNext(3) == 0) ||
                                    (e.miHasGeneralModifier > 0 && hasGeneral() && randomNext(3) == 0) ||
                                    (e.miHomeModifier > 0 && pFromTile.hasOwner() && getPlayer() == pFromTile.getOwner()) ||
                                    (e.miRiverAttackModifier > 0 && pFromTile.isRiverCrossing(pToTile)) ||
                                    (e.miUrbanAttackModifier > 0 && pToTile.isUrban()) ||
                                    (e.miWaterLandAttackModifier > 0 && pFromTile.isWater() != pToTile.isWater()) ||
-                                   validAgainstDefender(e, pDefendingUnit, pFromTile, pToTile) ||
+                                   validAgainstDefender(e, pDefendingUnit, pFromTile) ||
                                    (e.miSettlementAttackModifier > 0 && pToTile.hasCity())      ||
                                    (e.meClass != EffectUnitClassType.NONE && hasEffectUnitClass(e.meClass))
                                  )
@@ -247,7 +247,7 @@ namespace DynamicUnits
            return base.attackTile(pFromTile, pToTile, bTargetTile, iAttackPercent, pActingPlayer, ref azTileTexts, out eOutcome, ref bEvent);
        }
 
-        private bool validAgainstDefender(InfoEffectUnit e, Unit pDefendingUnit, Tile pFromTile, Tile pToTile)
+        private bool validAgainstDefender(InfoEffectUnit e, Unit pDefendingUnit, Tile pFromTile)
         {
             //future implementation: against defender's unit traits
             //e.maiUnitTraitModifier and its 3 cousins, loop through all enemy unit's traits
@@ -255,9 +255,19 @@ namespace DynamicUnits
             {
                 return false;
             }
-            else return (e.miDamagedThemModifier > 0 && pDefendingUnit.isDamaged() && randomNext(4) == 0) || 
-                        (e.miFlankingAttackModifier > 0 && pFromTile.flankingAttack(pDefendingUnit, pToTile)) || 
-                        (e.miVsGeneralModifier > 0 && pDefendingUnit.hasGeneral());
+            bool valid = (e.miDamagedThemModifier > 0 && pDefendingUnit.isDamaged() && randomNext(5) == 0) || 
+                        (e.miFlankingAttackModifier > 0 && pFromTile.flankingAttack(pDefendingUnit, pDefendingUnit.tile())) || 
+                        (e.miVsGeneralModifier > 0 && pDefendingUnit.hasGeneral()) ||
+                        (e.mbIgnoresDistance && pFromTile.distanceTile(pDefendingUnit.tile()) > 1);
+            foreach (var trait in pDefendingUnit.info().maeUnitTrait) {
+                if (valid)
+                    break;
+                if (e.maiUnitTraitModifier[trait] + e.maiUnitTraitModifierAttack[trait] + e.maiUnitTraitModifierDefense[trait] > 0)
+                    valid = true;
+                if (e.maiUnitTraitModifierMelee[trait] > 0 && info().mbMelee)
+                    valid = true;
+                }
+            return valid;
         }
 
         protected override void doXP(int multiplier, ref List<TileText> azTileTexts)

@@ -35,8 +35,7 @@ namespace dynamicHarmony
             if (harmony == null)
                 return;
             harmony.UnpatchAll(MY_HARMONY_ID);
-            harmony = null;
-         
+            harmony = null;     
         }
 
         private static bool attackedThisTurn(Unit unit)
