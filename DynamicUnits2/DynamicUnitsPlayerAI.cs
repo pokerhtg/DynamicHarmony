@@ -34,7 +34,7 @@ namespace DynamicUnits
         protected override int AI_YIELD_TURNS => base.AI_YIELD_TURNS + offset;
         protected override int AI_UNIT_RANDOM_PROMOTION_VALUE => base.AI_UNIT_PROMOTE_VALUE/3*2;
             
-        protected override int AI_TRADE_NETWORK_VALUE_ESTIMATE => base.AI_TRADE_NETWORK_VALUE_ESTIMATE * (13 + offset) / 13;
+        protected override int AI_TRADE_NETWORK_VALUE_ESTIMATE => base.AI_TRADE_NETWORK_VALUE_ESTIMATE * (26 + offset) / 26;
         protected override int AI_BUILD_URBAN_VALUE => base.AI_BUILD_URBAN_VALUE + 2 * offset;
         //  protected override int AI_IDLE_XP_VALUE /= 2;
         //  protected override int AI_CITY_REBEL_VALUE /= 2;
@@ -54,11 +54,7 @@ namespace DynamicUnits
             //defense structures aren't that important
             return base.getFortValue(eImprovement, pTile)/2;  
         }
-        protected override long getRoadValue(City pCity, bool bMovement, bool bConnection, bool bRemove, City pOtherCity)
-        {
-            //road connections are way more valuable than vanilla
-            return base.getRoadValue(pCity, bMovement, bConnection, bRemove, pOtherCity) * (bConnection? 2: 5);
-        }
+       
         protected override long calculateUnitValue(UnitType eUnit)
         {
             long val = base.calculateUnitValue(eUnit);

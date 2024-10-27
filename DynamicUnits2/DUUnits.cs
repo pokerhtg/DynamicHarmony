@@ -153,7 +153,7 @@ namespace DynamicUnits
             {
                 int xp = -infos().Globals.COMBAT_BASE_XP;
                 if (canDamageCity(pToTile))
-                    xp += infos().Globals.BASE_DAMAGE + attackCityDamage(pFromTile, pToTile.city(), iAttackPercent);
+                    xp += infos().Globals.BASE_DAMAGE + attackCityDamage(pFromTile, pToTile.city(), bCritical:false, iAttackPercent);
                 Unit pDefendingUnit = pToTile.defendingUnit();
 
                 if (pDefendingUnit != null && canDamageUnit(pDefendingUnit))
@@ -232,7 +232,7 @@ namespace DynamicUnits
                         {
                             game().sendTileText(new TileText("+ " + HelpText.TEXT(infos().promotion(bonusPromotion).mName)+"!", pFromTile.getID(), getPlayer()));
                             
-                            player().pushLogData(() => TextManager.TEXT("TEXT_GAME_UNIT_BATTLEFIELD_PROMOTION", HelpText.buildUnitNameVariable(this, game(), true), HelpText.buildPromotionLinkVariable(bonusPromotion)), GameLogType.UNIT_CAPTURED, pToTile.getID(), infos().unit(getType()), pFromTile.getID());
+                            player().pushLogData(() => TextManager.TEXT("TEXT_GAME_UNIT_BATTLEFIELD_PROMOTION", HelpText.buildUnitNameVariable(this, game()), HelpText.buildPromotionLinkVariable(bonusPromotion)), GameLogType.UNIT_CAPTURED, pToTile.getID(), infos().unit(getType()), pFromTile.getID());
                        //     player().pushLogData(() => TextManager.TEXT("TEXT_GAME_CITY_ATTACKED_LOG_DATA", HelpText.buildCityLinkVariable(pTargetCity, pTargetPlayer), HelpText.buildUnitOwnerLinkVariable(this, game(), pTargetPlayer), HelpText.buildUnitLinkVariable(this, pTargetPlayer), HelpText.buildYieldValueIconLinkVariable(infos().Globals.DISCONTENT_YIELD, infos().Globals.CITY_ATTACKED_DISCONTENT, true, false, Constants.YIELDS_MULTIPLIER)), GameLogType.CITY_ATTACKED, pTargetCity.getTileID(), infos().unit(getType()), pFromTile.getID());
 
                         }

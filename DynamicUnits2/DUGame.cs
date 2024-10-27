@@ -71,6 +71,9 @@ namespace DynamicUnits
         protected override int getSellPrice(int iPrice, YieldType eYield, Player pPlayer)
         {
             int salePrice = Math.Max(1, getBuyPrice(iPrice) * infos().Globals.PRICE_SELL_PERCENT / 100);
+            if (pPlayer.isNoSellPenaltyYieldUnlock(eYield))
+                return base.getSellPrice(iPrice, eYield, pPlayer);
+
             if (pPlayer?.isNoSellPenaltyUnlock() ?? false)
             {
                 return salePrice * 2;

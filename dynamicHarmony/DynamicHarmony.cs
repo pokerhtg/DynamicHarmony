@@ -121,7 +121,7 @@ namespace dynamicHarmony
 
                     if (!pToTile.hasCity() && ((pToTile.improvement()?.miDefenseModifier?? 0) < 1) && pFromTile.distanceTile(pToTile) == 2 //here's that "2" referred to in the TODO above
                         && (pToTile.defendingUnit()?.movement() ?? -1) > 0 && pToTile.canUnitOccupy(unit, unit.getTeam(), false, false, true, false)
-                        && !target.isWorker() ) //charging against worker, who could be making a wonder, is pretty OP. Banned!
+                        && !target.isWorker() && !pToTile.isCitySiteAny() && !target.isFortify()) //charging against worker, who could be making a wonder, is pretty OP. Banned! Charging into city site and fortifying unit is op too.
                     {
                         List<int> adjTiles = new List<int>();
                         pFromTile.getTilesAtDistance(1, adjTiles, false);
@@ -425,7 +425,7 @@ namespace dynamicHarmony
                 if (bKite)
                 {
                     if (__instance.attackDamagePreview(pFromUnit, pFromTile, pFromUnit.player()) >= __instance.getHP() && //dead
-                          pFromUnit.canAdvanceAfterAttack(pFromTile, pToTile, __instance, true, pFromUnit.player())) //and routing bool canAdvanceAfterAttack(Tile pFromTile, Tile pToTile, Unit pDefendingUnit, bool bTestUnits, bool bCheckAdvance = true)
+                          pFromUnit.canAdvanceAfterAttack(pFromTile, pToTile, __instance, true, true, pFromUnit.player())) //if a unit can/will rout, let it rout and disable kiting
                         return true;
 
                     if (pFromUnit.canAttackUnitOrCity(pFromTile, pToTile, null) && !pFromUnit.isFatigued() && !pFromUnit.isMarch()) //kite condition: has moves left and hitting
@@ -494,7 +494,7 @@ namespace dynamicHarmony
                     if (debug)
                         Debug.Log("debug trace: entering harmony's AttackUnitorCity kite");
                     if (pToUnit.attackDamagePreview(__instance, pFromTile, __instance.player()) >= pToUnit.getHP() && //dead
-                       __instance.canAdvanceAfterAttack(pFromTile, pToTile, pToUnit, true, pActingPlayer)) //and routing
+                       __instance.canAdvanceAfterAttack(pFromTile, pToTile, pToUnit, true, true, pActingPlayer)) //and routing
                     {
                         //what a specific situation! Routing, so not running.
                     }
@@ -566,7 +566,7 @@ namespace dynamicHarmony
                             {
                                 City city = pLoopTile.city();
                                 cityHP = city.getHP();
-                                dmg = __instance.attackCityDamage(pFromTile, city, percent);
+                                dmg = __instance.attackCityDamage(pFromTile, city, bCritical: false, percent);
                                 if (dmg < 1)
                                     continue;
                                 city.changeDamage(dmg);                        
@@ -1031,7 +1031,7 @@ namespace dynamicHarmony
                                 if (ClientMgr.GameClient.tile(iLoopTile) == city.tile())
                                 {
                                     ___msiAffectedCities.Add(city.getID());
-                                    int iDamagePreviewHP = pFromUnit.attackCityDamage(pFromUnit.tile(), city, pFromUnit.attackPercent(eLoopAttack));
+                                    int iDamagePreviewHP = pFromUnit.attackCityDamage(pFromUnit.tile(), city, bCritical:false, pFromUnit.attackPercent(eLoopAttack));
                                     UIAttributeTag widget = getCityWidgetTag(__instance, city.getID());
                                  
                                     widget.SetInt("DamagePreviewHP", iDamagePreviewHP);

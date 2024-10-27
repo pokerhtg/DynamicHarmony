@@ -47,14 +47,29 @@ namespace DynamicUnits
                 Tile cityCenter = pCity.tile();
                 if (game().player(eToPlayer).findClosestCity(cityCenter).tile().distanceTile(cityCenter) < 2 * infos().Globals.MIN_CITY_SITE_DISTANCE)
                     return true;
-
             }
             return false;
         }
-        public override int getTechCostWhole(TechType eTech)
-        {
-           
 
+        //hardcode fix for STAT_LEADER_COUNT
+        public override void changeLeaderStat(StatType eStat, int iChange, bool bDisplayCognomenPopup = true)
+        {
+            if (infos().stat(eStat).mzType == "STAT_LEADER_COUNT")
+            {
+                if (iChange == 1)
+                {
+                    base.changeLeaderStat(eStat, getNumLeaders(false), bDisplayCognomenPopup); //feed it number of leaders excluding regents instead of just 1
+                  //  Debug.Log("leader change. Now at " + getNumLeaders(false));
+                }
+                else 
+                    Debug.Log("making a surprising leader count change " + iChange);
+            }
+            else 
+                base.changeLeaderStat(eStat, iChange, bDisplayCognomenPopup);   
+        }
+
+        public override int getTechCostWhole(TechType eTech)
+        { 
             if (capitalCity() == null)
                 return base.getTechCostWhole(eTech);
             else

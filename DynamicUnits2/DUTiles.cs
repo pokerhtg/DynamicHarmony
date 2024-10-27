@@ -66,20 +66,44 @@ namespace DynamicUnits
         }
         public bool semipassable()
         {
+            if (height() == null)
+                return false;
             return height().miMovementCost > 14;
         }
         public override bool canBothUnitsOccupy(Unit pUnit, Unit pOtherUnit)
         {
             if (pOtherUnit.getPlayer() == pUnit.getPlayer())
+            {
                 if (pOtherUnit.movement() < 1 != pUnit.movement() < 1) //XOR
                     return true;
+                if (pUnit != pOtherUnit && pUnit.movement() < 1)
+                {
+                    return false;   
+                }
+            }
             return base.canBothUnitsOccupy(pUnit, pOtherUnit); 
         }
-
+        /**
         public override bool canUnitOccupy(Unit pUnit, TeamType eVisibilityTeam, bool bTestTheirUnits, bool bTestOurUnits, bool bFinalMoveTile, bool bBumped)
         {
             if (pUnit.movement() < 1)
-                return true;
+            {
+                if (!bTestOurUnits)
+                    return true;
+                else
+                {
+                    bool anotherTower = false; 
+                    foreach (var u in getUnits())
+                    {
+                        if (game().unit(u).movement() < 1 && game().unit(u) != pUnit)
+                        {
+                            //if there's another immobile unit already here
+                            anotherTower = true;
+                        }
+                    }
+                    return anotherTower;
+                }
+            }
             if (bTestTheirUnits && hasUnit())
             {
                 using (var unitListScoped = CollectionCache.GetListScoped<int>())
@@ -94,6 +118,6 @@ namespace DynamicUnits
                 }
             }
             return base.canUnitOccupy(pUnit, eVisibilityTeam, bTestTheirUnits, bTestOurUnits, bFinalMoveTile, bBumped);
-        }
-     }
+        }**/
+    }
 }
