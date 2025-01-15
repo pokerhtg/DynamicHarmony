@@ -8,17 +8,6 @@ namespace DynamicUnits
 {
 	internal class DUUnitAI : Unit.UnitAI
 	{
-		public override bool isProtectedTile(Tile pTile, bool bAfterAttack, int iMinPowerPercent, int iExtraDanger = 0)
-		{
-			try
-			{
-				return base.isProtectedTile(pTile, bAfterAttack, iMinPowerPercent, iExtraDanger = 0);
-			}
-			catch (Exception)
-			{			
-				return true;
-			}
-		}
 
 		//just to wrap and expose the private method
 		public void AttackFromCurrentTile(bool bKillOnly)

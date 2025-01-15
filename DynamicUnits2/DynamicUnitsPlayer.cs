@@ -5,6 +5,7 @@ using System.Text;
 using TenCrowns.GameCore;
 using TenCrowns.GameCore.Text;
 using UnityEngine;
+using static UnityEngine.Random;
 
 namespace DynamicUnits
 {
@@ -50,22 +51,13 @@ namespace DynamicUnits
             }
             return false;
         }
-
-        //hardcode fix for STAT_LEADER_COUNT
-        public override void changeLeaderStat(StatType eStat, int iChange, bool bDisplayCognomenPopup = true)
+        protected override void addLeader(int iNewValue)
         {
-            if (infos().stat(eStat).mzType == "STAT_LEADER_COUNT")
+            if (leader() != game().character(iNewValue))
             {
-                if (iChange == 1)
-                {
-                    base.changeLeaderStat(eStat, getNumLeaders(false), bDisplayCognomenPopup); //feed it number of leaders excluding regents instead of just 1
-                  //  Debug.Log("leader change. Now at " + getNumLeaders(false));
-                }
-                else 
-                    Debug.Log("making a surprising leader count change " + iChange);
+                changeLeaderStat(infos().getGlobalType<StatType>("LEADER_COUNT_STAT"), getNumLeaders(false));
+                base.addLeader(iNewValue);
             }
-            else 
-                base.changeLeaderStat(eStat, iChange, bDisplayCognomenPopup);   
         }
 
         public override int getTechCostWhole(TechType eTech)
@@ -74,7 +66,6 @@ namespace DynamicUnits
                 return base.getTechCostWhole(eTech);
             else
             {
-             
                 return diffusedTechCost(eTech, out _);
             }
         }
@@ -150,7 +141,7 @@ namespace DynamicUnits
                 }
             }
 
-            int discount = MAXDISCOUNT * knownNations * distanceFactor / totalDistFactor / eligibleNations; 
+            int discount = MAXDISCOUNT * knownNations * distanceFactor * distanceFactor/ totalDistFactor / totalDistFactor / eligibleNations; //distance matter more than number of players
 
             int difficulty = (int)getDifficulty();
             if (knownNations == 0)
@@ -162,7 +153,7 @@ namespace DynamicUnits
            
             discount -= (int)Math.Pow(difficulty, 1.8); //playing on harder difficulties? research gets harder (42% on Great)
 
-            discount += 45; //standard discount is 45%, compensated in globalsxml's tech cost, to make people feel better about getting a discount most of the time
+            discount += 46; //standard discount is 46%, compensated in globalsxml's tech cost, to make people feel better about getting a discount most of the time
 
             discount = discount * (eligibleNations - uncontactedNation) / eligibleNations; //partial info displayed to players; let's limit discount let's slow down the roll to reduce confusion; uncontacted nations reduce the discount
 

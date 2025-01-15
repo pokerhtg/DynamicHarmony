@@ -15,12 +15,12 @@ namespace DynamicUnits
             return Math.Max(-1, (info().miMovement + movementExtra()));
         }
     
-        public override bool canActMove(Player pActingPlayer, int iMoves = 1, bool bAssumeMarch = false)
+        public override bool canActMove(Player pActingPlayer, int iMoves = 1, bool bAssumeMarch = false, bool bCancelImprovement = false)
         {
             if (movement() < 0)
                 return false;
             else
-                return base.canActMove(pActingPlayer, iMoves, bAssumeMarch);
+                return base.canActMove(pActingPlayer, iMoves, bAssumeMarch, bCancelImprovement);
         }
         public override bool canAnchor(Player pActingPlayer, Tile pTile, bool bTestEnabled = true)
         {
@@ -154,7 +154,7 @@ namespace DynamicUnits
             DUXP();
             bool promoted = false;
             // Debug.Log(String.Format("{0}/{1} chance for battlefield promotion", xp, 50 * getEffectUnitCount()));
-            if (xp >= randomNext(35 * getEffectUnitCount())) //not fair, but units with too many effects get overwhelming, so let's curb that. 
+            if (xp >= randomNext(42 * getEffectUnitCount())) //not fair, but units with too many effects get overwhelming, so let's curb that. 
             {
                 //battlefield promotion
                 //promote (without adding to unit level) instead of gaining xp. promotion should be the one most useful against the unit you just attacked
@@ -162,7 +162,7 @@ namespace DynamicUnits
                 PromotionType ePromotion;
                 for (ePromotion = (PromotionType)0; ePromotion < infos().promotionsNum(); ePromotion++)
                 {
-                    if (infos().promotion(ePromotion).mbUpgrade && !hasPromotionAvailable(ePromotion) && isPromotionValid(ePromotion))
+                    if (!hasPromotionAvailable(ePromotion) && isPromotionValid(ePromotion))
                     {
 
                         InfoPromotion promotion = infos().promotion(ePromotion);
@@ -208,8 +208,7 @@ namespace DynamicUnits
                         game().sendTileText(new TileText("+ " + HelpText.TEXT(infos().promotion(bonusPromotion).mName) + "!", pFromTile.getID(), getPlayer()));
 
                         player().pushLogData(() => TextManager.TEXT("TEXT_GAME_UNIT_BATTLEFIELD_PROMOTION", HelpText.buildUnitNameVariable(this, game()), HelpText.buildPromotionLinkVariable(bonusPromotion)), GameLogType.UNIT_CAPTURED, pToTile.getID(), infos().unit(getType()), pFromTile.getID());
-                        //     player().pushLogData(() => TextManager.TEXT("TEXT_GAME_CITY_ATTACKED_LOG_DATA", HelpText.buildCityLinkVariable(pTargetCity, pTargetPlayer), HelpText.buildUnitOwnerLinkVariable(this, game(), pTargetPlayer), HelpText.buildUnitLinkVariable(this, pTargetPlayer), HelpText.buildYieldValueIconLinkVariable(infos().Globals.DISCONTENT_YIELD, infos().Globals.CITY_ATTACKED_DISCONTENT, true, false, Constants.YIELDS_MULTIPLIER)), GameLogType.CITY_ATTACKED, pTargetCity.getTileID(), infos().unit(getType()), pFromTile.getID());
-
+                   
                     }
                 }
             }

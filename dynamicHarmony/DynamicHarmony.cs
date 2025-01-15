@@ -632,7 +632,7 @@ namespace dynamicHarmony
                  __instance.setTileID(pToTile.getID(), pActingPlayer);
             }
             
-            [HarmonyPatch(nameof(Unit.canActMove), new Type[] { typeof(Player), typeof(int), typeof(bool) })]
+            [HarmonyPatch(nameof(Unit.canActMove), new Type[] { typeof(Player), typeof(int), typeof(bool), typeof(bool) })]
             // Player pActingPlayer, int iMoves = 1, bool bAssumeMarch = false)
             ///for Kite
             static bool Prefix(ref Unit __instance, ref bool __result)
@@ -712,42 +712,43 @@ namespace dynamicHarmony
             ///charge AI--did you know, melee can attack range 2?
             static bool Prefix(ref Unit ___unit, Tile pTargetTile, bool bTestUnits, List<int> aiAttackTiles)
             {
-                try
+                bool passToOriginal = true;
+                if (PatchUnitBehaviors.tryCharge(___unit, out _, null, null))
                 {
-                    if (PatchUnitBehaviors.tryCharge(___unit, out _, null, null))
+                        
+                    using (var listScoped = CollectionCache.GetListScoped<int>())
                     {
+                        pTargetTile.getTilesAtDistance(2, listScoped.Value);
                         int iNumValidTilesAtRange = 0;
-                        using (var listScoped = CollectionCache.GetListScoped<int>())
+                        foreach (int iLoopTile in listScoped.Value)
                         {
-                            pTargetTile.getTilesAtDistance(2, listScoped.Value);
-                            foreach (int iLoopTile in listScoped.Value)
-                            {
-                                Tile pMoveTile = ___unit.game().tile(iLoopTile);
+                            Tile pMoveTile = ___unit.game().tile(iLoopTile);
 
-                                if (___unit.at(pMoveTile) || ___unit.canAct(___unit.player()))
+                            if (___unit.at(pMoveTile) || ___unit.canAct(___unit.player()))
+                            {
+                                if (___unit.canTargetTile(pMoveTile, pTargetTile)) //this calls and checks tryCharge for a more specific to/from combo
                                 {
-                                    if (___unit.canTargetTile(pMoveTile, pTargetTile)) //this calls and checks tryCharge for a more specific to/from combo
+                                    ++iNumValidTilesAtRange;
+                                    if (___unit.canOccupyTile(pMoveTile, ___unit.getTeam(), bTestUnits, bTestUnits, false))
                                     {
-                                        ++iNumValidTilesAtRange;
-                                        if (___unit.canOccupyTile(pMoveTile, ___unit.getTeam(), bTestUnits, bTestUnits, false))
+                                        if (___unit.isTribe())
                                         {
+                                            passToOriginal = false;
+                                        }
+                                        else 
                                             if (___unit.player().AI.isTileReachable(pMoveTile, ___unit.tile()))
                                             {
                                                 aiAttackTiles.Add(iLoopTile);
-                                                return false;
+                                                passToOriginal = false;
                                             }
-                                        }
                                     }
                                 }
                             }
                         }
                     }
-                    return true;
                 }
-                catch (Exception)
-                {
-                    return false; //a literal catch all solution--the method causes some null pointer...somewhere TODO fix me
-                }
+                return passToOriginal;
+              
             }
 
             [HarmonyPatch(typeof(Unit.UnitAI), "doRoleAction")]
@@ -830,7 +831,6 @@ namespace dynamicHarmony
                     return false;
                 }
                     
-
                 return true;
             }
         } //PatchAI
@@ -1049,7 +1049,6 @@ namespace dynamicHarmony
             {
                 throw new NotImplementedException("It's a stub");
             }
-
         }
     }
 }

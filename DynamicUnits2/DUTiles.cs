@@ -1,4 +1,5 @@
 ﻿using Mohawk.SystemCore;
+using System;
 using System.Collections.Generic;
 using TenCrowns.GameCore;
 using UnityEngine;
@@ -57,6 +58,10 @@ namespace DynamicUnits
                 return false;
             } 
         }
+        public override bool isWaterTradeEdge(TeamType eTeam, DirectionType eEdge)
+        {
+            return base.isWaterTradeEdge(eTeam, eEdge) && height().miMovementCost < 12;
+        }
         // public virtual bool canHaveImprovement(ImprovementType eImprovement, TeamType eTeamTerritory = TeamType.NONE, bool bTestTerritory = true, bool bTestEnabled = true, bool bTestAdjacent = true, bool bTestReligion = true, bool bUpgradeImprovement = false, bool bForceImprovement = false)
         public override bool canHaveImprovement(ImprovementType eImprovement, City pCity = null, TeamType eTeamTerritory = TeamType.NONE, bool bTestTerritory = true, bool bTestEnabled = true, bool bTestAdjacent = true, bool bTestReligion = true, bool bUpgradeImprovement = false, bool bForceImprovement = false)
         {
@@ -70,6 +75,16 @@ namespace DynamicUnits
                 return false;
             return height().miMovementCost > 14;
         }
+
+        public override bool skipImprovementUnitTurns(TeamType eActiveTeam)
+        {
+            bool result = base.skipImprovementUnitTurns(eActiveTeam);
+            var range = game().tribeLevel().miMaxUnitsRange;
+            if (result && countTribeUnitsRange(getImprovementTribeSite(eActiveTeam), range) < range)
+                return false; //if fewer units than the radius of the camp's control, never skip. Useful when camp is in a really cramped place, mini island etc.
+            return result;
+        }
+
         public override bool canBothUnitsOccupy(Unit pUnit, Unit pOtherUnit)
         {
             if (pOtherUnit.getPlayer() == pUnit.getPlayer())

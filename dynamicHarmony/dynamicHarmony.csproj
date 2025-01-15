@@ -44,7 +44,7 @@
     </Reference>
     <Reference Include="Mohawk.SystemCore, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\..\Program Files\Epic Games\OldWorldTestBranch\OldWorld_Data\Managed\Mohawk.SystemCore.dll</HintPath>
+      <HintPath>D:\STEAM\steamapps\common\Old World\OldWorld_Data\Managed\Mohawk.SystemCore.dll</HintPath>
     </Reference>
     <Reference Include="TenCrowns.GameCore, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

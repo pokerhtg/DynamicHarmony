@@ -38,9 +38,10 @@ namespace DynamicUnits
                 TextVariable value = buildColorTextSignedVariable(why[3], true);
                 output.AddTEXT("TEXT_HELP_DIFUSED_TECH_COST", why[0], why[1], why[2], value);
             }
-            catch(Exception)
+            catch(Exception e)
             {
                 UnityEngine.Debug.Log("diffusion exception");
+                UnityEngine.Debug.Log(e);
             }
 
             return output;

@@ -43,7 +43,10 @@ namespace DynamicUnits
         {
             return new DUGame(pModSettings, pApp, bShowGame);
         }
+        public override ClientUI CreateClientUI(IApplication app)
+        {
+            return new DUUI(app);
+        }
 
-       
     }
 }

@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using TenCrowns.ClientCore;
 using TenCrowns.GameCore;
+using TenCrowns.GameCore.Text;
+using static TenCrowns.GameCore.Text.TextExtensions;
 
 namespace DynamicUnits
 {
@@ -46,6 +48,36 @@ namespace DynamicUnits
             return base.initFromMapScript(pGameParams, pMapBuilder);
         }
 
+        public override TextVariable getTeamNameVariable(TeamType eTeam)
+        {
+            using (new UnityProfileScope("Game.getTeamNameVariable"))
+            {
+                var nations = new List<TextVariable>();
+                for (PlayerType eLoopPlayer = 0; eLoopPlayer < getNumPlayers(); eLoopPlayer++)
+                {
+                    Player pLoopPlayer = player(eLoopPlayer);
+
+                    if (pLoopPlayer.getTeam() == eTeam)
+                    {
+                        nations.Add(HelpText.buildNationLinkVariable(pLoopPlayer.getNation(), eLoopPlayer));
+                    }
+                }
+                switch (nations.Count)
+                {
+                    case 1:
+                        return TEXTVAR("TEXT_GAME_TEAM1", textManager(), nations[0]);
+                    case 2:
+                        return TEXTVAR("TEXT_GAME_TEAM2", textManager(), nations[0], nations[1]);
+                    case 3:
+                        return TEXTVAR("TEXT_GAME_TEAM3", textManager(), nations[0], nations[1], nations[2]);
+                    case 0:
+                    
+                    default:
+                        return base.getTeamNameVariable(eTeam);
+                }
+                        
+            }
+        }
         public override int getTeamWarScore(TeamType eIndex1, TeamType eIndex2)
         {
 
