@@ -385,7 +385,7 @@ namespace dynamicHarmony
             [HarmonyPatch(nameof(Unit.attackEffectPreview))]
             ///define special effects to display when this unit is attacked
             ///For Kite and Skirmish
-            static bool Prefix(ref TextBuilder __result, ref Unit __instance, ref TextBuilder builder, ref Unit pFromUnit, Tile pFromTile)
+            static bool Prefix(ref TextBuilder __result, ref Unit __instance, ref TextBuilder builder, ref Unit pFromUnit, Tile pMouseoverTile, Player pActingPlayer)
             {
                 ///pFromUnit is attacking this (__instance) unit in this preview
                 var pToTile = __instance.tile();
@@ -397,7 +397,7 @@ namespace dynamicHarmony
                 bool bKite = isKite == specialMoveCodeAttacker;
                 bool special = false;
 
-                if (tryCharge(pFromUnit, out _, pFromTile, pToTile))
+                if (tryCharge(pFromUnit, out _, pMouseoverTile, pToTile))
                 {
                     var charge = g.HelpText.getGenderedEffectUnitName(g.infos().effectUnit(getEffectName(pFromUnit.getEffectUnits(), "CHARGE", g.infos())), pFromUnit.getGender());
                     builder.AddTEXT(charge);
@@ -406,10 +406,10 @@ namespace dynamicHarmony
                 }
 
               
-                if (isSkirmishing(pFromUnit, pFromTile, __instance, out defenderEffect)) 
+                if (isSkirmishing(pFromUnit, pMouseoverTile, __instance, out defenderEffect)) 
                 {
                     //Special!
-                    if (pFromUnit.getPushTile(__instance, pFromTile, pToTile) == null)
+                    if (pFromUnit.getPushTile(__instance, pMouseoverTile, pToTile) == null)
                         builder.AddTEXT("TEXT_CONCEPT_STUN");
                     else
                     {
@@ -424,11 +424,11 @@ namespace dynamicHarmony
                 
                 if (bKite)
                 {
-                    if (__instance.attackDamagePreview(pFromUnit, pFromTile, pFromUnit.player()) >= __instance.getHP() && //dead
-                          pFromUnit.canAdvanceAfterAttack(pFromTile, pToTile, __instance, true, true, pFromUnit.player())) //if a unit can/will rout, let it rout and disable kiting
+                    if (__instance.attackDamagePreview(pFromUnit, pMouseoverTile, pActingPlayer) >= __instance.getHP() && //dead
+                          pFromUnit.canAdvanceAfterAttack(pMouseoverTile, pToTile, __instance, true, true, pActingPlayer)) //if a unit can/will rout, let it rout and disable kiting
                         return true;
 
-                    if (pFromUnit.canAttackUnitOrCity(pFromTile, pToTile, null) && !pFromUnit.isFatigued() && !pFromUnit.isMarch()) //kite condition: has moves left and hitting
+                    if (pFromUnit.canAttackUnitOrCity(pMouseoverTile, pToTile, pActingPlayer) && !pFromUnit.isFatigued() && !pFromUnit.isMarch()) //kite condition: has moves left and hitting
                     {
                         var txt2 = g.HelpText.getGenderedEffectUnitName(g.infos().effectUnit(attackerEffect), pFromUnit.getGender());
                         builder.AddTEXT(txt2);
@@ -439,7 +439,7 @@ namespace dynamicHarmony
                 
                 
                 //if pushing from afar
-                if (pFromUnit.hasPush(pToTile) && pFromUnit.getPushTile(pFromUnit, pFromTile, pToTile) == pToTile)
+                if (pFromUnit.hasPush(pToTile) && pFromUnit.getPushTile(pFromUnit, pMouseoverTile, pToTile) == pToTile)
                     special = true; //Special! Let's ignore "push" that doesn't move the unit
                 return !special;
             }
@@ -961,13 +961,19 @@ namespace dynamicHarmony
             {
                 ClientManager ClientMgr = ___APP.GetClientManager();
                 var pSelectedUnit = ClientMgr.Selection.getSelectedUnit();
-                Tile pMouseoverTile = ClientMgr.Selection.getAttackPreviewTile();
+               
+                int targetId = ClientMgr.Selection.getMouseoverTile()?.city()?.getID() ?? ClientMgr.Selection.getAttackPreviewUnit()?.getID() ?? -1;
 
-                if (PatchUnitBehaviors.tryCharge(pSelectedUnit, out Tile newFrom, pSelectedUnit.tile(), pMouseoverTile))
+                if (targetId != -1)
                 {
-                    phantom = newFrom;
-               //     phantomDelay = 2; //this magic number depends on the IL code and where the assignment we want to change is happening within the method
-                    targetUnit = pSelectedUnit;
+                    Tile pMouseoverTile = ClientMgr.Selection.getMouseoverTile();
+
+                    if (PatchUnitBehaviors.tryCharge(pSelectedUnit, out Tile newFrom, pSelectedUnit.tile(), pMouseoverTile))
+                    {
+                        phantom = newFrom;
+                   //     phantomDelay = 2; //this magic number depends on the IL code and where the assignment we want to change is happening within the method
+                        targetUnit = pSelectedUnit;
+                    }
                 }
             }
 

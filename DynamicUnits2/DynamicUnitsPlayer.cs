@@ -51,15 +51,7 @@ namespace DynamicUnits
             }
             return false;
         }
-        protected override void addLeader(int iNewValue)
-        {
-            if (leader() != game().character(iNewValue))
-            {
-                changeLeaderStat(infos().getGlobalType<StatType>("LEADER_COUNT_STAT"), getNumLeaders(false));
-                base.addLeader(iNewValue);
-            }
-        }
-
+      
         public override int getTechCostWhole(TechType eTech)
         { 
             if (capitalCity() == null)

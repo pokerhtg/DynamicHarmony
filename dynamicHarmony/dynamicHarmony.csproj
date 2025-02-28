@@ -44,11 +44,15 @@
     </Reference>
     <Reference Include="Mohawk.SystemCore, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>D:\STEAM\steamapps\common\Old World\OldWorld_Data\Managed\Mohawk.SystemCore.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\..\Steam\steamapps\common\Old World\OldWorld_Data\Managed\Mohawk.SystemCore.dll</HintPath>
+    </Reference>
+    <Reference Include="Mohawk.UIInterfaces, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\Steam\steamapps\common\Old World\OldWorld_Data\Managed\Mohawk.UIInterfaces.dll</HintPath>
     </Reference>
     <Reference Include="TenCrowns.GameCore, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>D:\STEAM\steamapps\common\Old World\OldWorld_Data\Managed\TenCrowns.GameCore.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\..\Steam\steamapps\common\Old World\OldWorld_Data\Managed\TenCrowns.GameCore.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
