@@ -14,6 +14,12 @@ namespace DynamicUnits
 		{ 
 			base.doAttackFromCurrentTile(bKillOnly);
 		}
-
+		public override bool shouldTribePillage(Tile pTile)
+		{
+			if (base.shouldTribePillage(pTile) && (pTile.owner() != unit.player()))
+				return true;
+			return false;
+			
+		}
     }
 }

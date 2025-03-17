@@ -27,8 +27,8 @@ namespace DynamicUnits
         {
             if (game().getTurn() < 2 && semipassable()) //at the beginning of the game, mountains are considered impassable--to help map gen
                 return true;
-
-            return mpCurrentData.mTileData.isImpassable(infos());
+            
+            return base.impassable() && !semipassable();
             
         }
         public override bool canUnitPass(UnitType eUnit, PlayerType ePlayer, TribeType eTribe, TeamType eVisibilityTeam, bool bTestHostileBlocking, bool bTestTerritory, bool bTestImpassable, Unit pIgnoreUnit = null)
@@ -98,41 +98,9 @@ namespace DynamicUnits
             }
             return base.canBothUnitsOccupy(pUnit, pOtherUnit); 
         }
-        /**
-        public override bool canUnitOccupy(Unit pUnit, TeamType eVisibilityTeam, bool bTestTheirUnits, bool bTestOurUnits, bool bFinalMoveTile, bool bBumped)
+        public override bool isResourceValid(ResourceType eResource)
         {
-            if (pUnit.movement() < 1)
-            {
-                if (!bTestOurUnits)
-                    return true;
-                else
-                {
-                    bool anotherTower = false; 
-                    foreach (var u in getUnits())
-                    {
-                        if (game().unit(u).movement() < 1 && game().unit(u) != pUnit)
-                        {
-                            //if there's another immobile unit already here
-                            anotherTower = true;
-                        }
-                    }
-                    return anotherTower;
-                }
-            }
-            if (bTestTheirUnits && hasUnit())
-            {
-                using (var unitListScoped = CollectionCache.GetListScoped<int>())
-                {
-                    getAliveUnits(unitListScoped.Value);
-                    foreach (int iUnitID in unitListScoped.Value)
-                    {
-                        Unit pLoopUnit = game().unit(iUnitID);
-                        if (pLoopUnit.movement() < 1 && pUnit.getTeam() != pLoopUnit.getTeam())
-                            return false;
-                    }
-                }
-            }
-            return base.canUnitOccupy(pUnit, eVisibilityTeam, bTestTheirUnits, bTestOurUnits, bFinalMoveTile, bBumped);
-        }**/
+            return base.isResourceValid(eResource) && !semipassable();
+        }
     }
 }

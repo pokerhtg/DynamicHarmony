@@ -296,7 +296,7 @@ namespace dynamicHarmony
                 else if (__instance != pFromUnit && pMouseoverTile != currTile && tryCharge(pFromUnit, out impactTile, pMouseoverTile, currTile))
                 {
                     //mouseover a hex from where the unit can attack me
-                    pMouseoverTile = impactTile; //fake the mouseover tile, then let the damage preview take ove
+                    pMouseoverTile = impactTile; //fake the mouseover tile, then let the damage preview take over
                     return true;
                 }
                 
@@ -318,8 +318,8 @@ namespace dynamicHarmony
             {
                 if (debug)
                     Debug.Log("entering post attack preview");
-                if (!bCheckHostile || __result != 0)
-                    return;
+              //  if (!bCheckHostile || __result != 0)
+               //     return;
               
                 Game g = __instance.game();
                 if (pFromUnit == null || g.isHostileUnitUnit(pFromUnit, __instance))
@@ -329,8 +329,9 @@ namespace dynamicHarmony
 
                 if (pMouseoverTile == null || pMouseoverTile.defendingUnit() == null || !pFromUnit.canTargetTile(pMouseoverTile))
                     return;
-               
-                for (AttackType eLoopAttack = 0; eLoopAttack < g.infos().attacksNum(); eLoopAttack++)
+                List<TileText> textz = new List<TileText>();
+                __result = friendlyFire(pFromUnit, pMouseoverTile, pFromTile, ref textz, targetTile: ownTile, forReal: false).Item2;
+            /**    for (AttackType eLoopAttack = 0; eLoopAttack < g.infos().attacksNum(); eLoopAttack++)
                 {
                     int iValue = pFromUnit.attackValue(eLoopAttack);
                     if (iValue > 0)
@@ -370,16 +371,16 @@ namespace dynamicHarmony
                                             //melee units don't do much friendly fire...
                                             atkPercent /= 3;
                                         }
-                                        __result += pFromUnit.attackUnitDamage(pFromTile, __instance, false, atkPercent, bCheckOurUnits:true);
+                                        __result += pFromUnit.attackUnitDamage(pFromTile, __instance, false, atkPercent, bCheckOurUnits:false);
                                         if (__result >= __instance.getHP())
-                                            __result = __instance.getHP() -1; //friendly fire is now no longer deadly
+                                            __result = __instance.getHP() -1; // friendly fire is now no longer deadly
                                        
                                     }
                                 }
                             }
                         }
                     }
-                }
+                } **/
             }
    
             [HarmonyPatch(nameof(Unit.attackEffectPreview))]
@@ -396,8 +397,10 @@ namespace dynamicHarmony
 
                 bool bKite = isKite == specialMoveCodeAttacker;
                 bool special = false;
+                bool mouseOverMe = pMouseoverTile == pToTile;
+                    
 
-                if (tryCharge(pFromUnit, out _, pMouseoverTile, pToTile))
+                if (tryCharge(pFromUnit, out _, mouseOverMe? pFromUnit.tile() : pMouseoverTile, pToTile))
                 {
                     var charge = g.HelpText.getGenderedEffectUnitName(g.infos().effectUnit(getEffectName(pFromUnit.getEffectUnits(), "CHARGE", g.infos())), pFromUnit.getGender());
                     builder.AddTEXT(charge);
@@ -479,16 +482,16 @@ namespace dynamicHarmony
                 List<TileText> azTileTexts = new List<TileText>();
                 if (debug)
                     Debug.Log("debug trace: entering harmony's AttackUnitorCity prefix");
-             
+
                 List<int> aiAdditionalDefendingUnits = new List<int>();
                 List<Unit.AttackOutcome> outcomes = new List<Unit.AttackOutcome>();
-                int cityHP = -1;
+                
                 __state = false;
                 Game g = __instance.game();
                 Infos info = g.infos();
-                var pToUnit = pToTile.defendingUnit(); 
+                var pToUnit = pToTile.defendingUnit();
                 if (pToUnit == null || pToUnit == __instance) //something went wrong. abort, abort!
-                    return; 
+                    return;
                 if (isKite == getSpecialMove(__instance.getEffectUnits(), info, out EffectUnitType hitNRunEff) && !__instance.isFatigued() && !__instance.isMarch())
                 {
                     if (debug)
@@ -500,9 +503,9 @@ namespace dynamicHarmony
                     }
                     else
                     {
-                        
-                        SendTileTextAll(g.HelpText.TEXT(g.infos().effectUnit(hitNRunEff).mName), pFromTile.getID(), g);       
-                    }               
+
+                        SendTileTextAll(g.HelpText.TEXT(g.infos().effectUnit(hitNRunEff).mName), pFromTile.getID(), g);
+                    }
                 }
                 if (tryCharge(__instance, out Tile impactFrom, pFromTile, pToTile))
                 {
@@ -510,7 +513,7 @@ namespace dynamicHarmony
                         Debug.Log("debug trace: entering harmony's AttackUnitorCity charge");
                     List<TileText> azTileTexts2 = new List<TileText>();
                     g.addTileTextAllPlayers(ref azTileTexts2, impactFrom.getID(), () => "Charge");
-                   
+
                     UnitMoveAction unitAction = new UnitMoveAction
                     {
                         miUnitID = __instance.getID(),
@@ -518,14 +521,14 @@ namespace dynamicHarmony
                         maiTiles = new List<int>
                         {
                             pFromTile.getID(),
-                            impactFrom.getID(),  
+                            impactFrom.getID(),
                             pToTile.getID(),
                         },
                         maTileTexts = azTileTexts2,
                         meActingPlayer = pActingPlayer?.getPlayer() ?? PlayerType.NONE
                     };
                     g.sendUnitMove(unitAction);
-                   
+
                     __instance.setTileID(impactFrom.getID(), pActingPlayer);
                     __state = true;
                 }
@@ -533,63 +536,16 @@ namespace dynamicHarmony
                 {
                     if (debug)
                         Debug.Log("debug trace: entering harmony's AttackUnitorCity skirmishing");
-                    
-                   retreat = why;
+
+                    retreat = why;
                 }
                 //look for friendly fire
-                for (AttackType eLoopAttack = 0; eLoopAttack < info.attacksNum(); eLoopAttack++)
-                {
-                    
-                    int iValue = __instance.attackValue(eLoopAttack);
-                    if (iValue <= 0)
-                        continue;
-                    using (var tilesScoped = CollectionCache.GetListScoped<int>())
-                    {
-                        pFromTile.getAttackTiles(tilesScoped.Value, pToTile, __instance.getType(), eLoopAttack, iValue);
-
-                        foreach (int iLoopTile in tilesScoped.Value)
-                        {
-                            Tile pLoopTile = g.tile(iLoopTile);
-                           
-                            if (__instance.canDamageUnitOrCity(pLoopTile, true)) //if this tile can be damaged, then original code will handle it
-                                continue;
-                            if (pLoopTile == pFromTile) //disable friendly damage on self
-                                continue; 
-                            int percent = __instance.attackPercent(eLoopAttack) / (__instance.info().mbMelee? 3: 1);
-                            Unit pLoopDefendingUnit = pLoopTile.defendingUnit();
-                            if (pLoopDefendingUnit == null || percent < 1)
-                                continue;
-                            if (debug)
-                                Debug.Log("debug trace: doing harmony's AttackUnitorCity friendly fire's loop");
-                            int dmg = 0;
-                            if (pLoopTile.hasCity())
-                            {
-                                City city = pLoopTile.city();
-                                cityHP = city.getHP();
-                                dmg = __instance.attackCityDamage(pFromTile, city, bCritical: false, percent);
-                                if (dmg < 1)
-                                    continue;
-                                city.changeDamage(dmg);                        
-                                outcomes.Add(city.getHP() == 0 ? Unit.AttackOutcome.CAPTURED : Unit.AttackOutcome.CITY);
-                                city.processYield(info.Globals.DISCONTENT_YIELD, info.Globals.CITY_ATTACKED_DISCONTENT);                  
-                            }
-                            else
-                            {
-                                aiAdditionalDefendingUnits.Add(pLoopDefendingUnit.getID());
-                                dmg = __instance.attackUnitDamage(pFromTile, pLoopDefendingUnit, false, percent);
-                                if (dmg < 1)
-                                    continue;
-                                pLoopDefendingUnit.changeDamage(dmg, true); //friendly fire never kills
-                                outcomes.Add(Unit.AttackOutcome.NORMAL);
-                             }
-
-                            g.addTileTextAllPlayers(ref azTileTexts, pLoopTile.getID(), () => "-" + dmg + " HP");
-                        }
-                    }
-                }
+                int cityHP = friendlyFire(__instance, pToTile, pFromTile, ref azTileTexts, aiAdditionalDefendingUnits, outcomes, forReal:true).Item1;
+              
                 if (azTileTexts.Count != 0)
                 {
-                    if (debug) { 
+                    if (debug)
+                    {
                         Debug.Log("debug trace: entering harmony's AttackUnitorCity printing " + azTileTexts.Count + " texts");
                         for (int i = 0; i < azTileTexts.Count; i++)
                             Debug.Log(azTileTexts[i].mzText + " for player " + azTileTexts[i].mePlayer);
@@ -597,7 +553,86 @@ namespace dynamicHarmony
                     g.sendUnitBattleAction(__instance, null, pFromTile, pToTile, pToTile, Unit.AttackOutcome.NORMAL, azTileTexts, pActingPlayer?.getPlayer() ?? PlayerType.NONE, cityHP > 0, cityHP, aiAdditionalDefendingUnits, outcomes);
                 }
             }
-          
+
+            //messy code, need refactor later. returns cityHP if a city exists else -1, targetTile damage if target tile exists
+            //forReal mode does actual damage, otherwise it just gives a preview. targetTile only makes sense for preview; a list of other params only makes sense if for real. only sharing code to ensure preview and real damage are the same
+            private static (int, int) friendlyFire(Unit attackingUnit, Tile pToTile, Tile pFromTile, ref List<TileText> azTileTexts, List<int> aiAdditionalDefendingUnits = null, List<Unit.AttackOutcome> outcomes = null, Tile targetTile = null, bool forReal = false)
+            {
+                var g = attackingUnit.game();
+                var info = g.infos();
+                int cityHP = -1;
+                int targetedDmg = targetTile == null ? -1 : 0;
+
+                for (AttackType eLoopAttack = 0; eLoopAttack < info.attacksNum(); eLoopAttack++)
+                {
+                    
+                    int iValue = attackingUnit.attackValue(eLoopAttack);
+                    if (iValue <= 0)
+                        continue;
+                    using (var tilesScoped = CollectionCache.GetListScoped<int>())
+                    {
+                        pFromTile.getAttackTiles(tilesScoped.Value, pToTile, attackingUnit.getType(), eLoopAttack, iValue);
+
+                        foreach (int iLoopTile in tilesScoped.Value)
+                        {
+                            Tile pLoopTile = g.tile(iLoopTile);
+
+                            if (attackingUnit.canDamageUnitOrCity(pLoopTile, true)) //if this tile can be damaged, then original code will handle it
+                                continue;
+                            if (pLoopTile == pFromTile) //disable friendly damage on self
+                                continue;
+                            if (targetTile != null && targetTile != pLoopTile) //looking for info for a specific target tile, ignore the rest
+                                continue;
+                            
+                            int percent = attackingUnit.attackPercent(eLoopAttack) / (attackingUnit.info().mbMelee ? 3 : 1);
+                            Unit pLoopDefendingUnit = pLoopTile.defendingUnit();
+                            if (pLoopDefendingUnit == null || percent < 1)
+                                continue;
+                           
+                            if (debug)
+                                Debug.Log("debug trace: doing harmony's AttackUnitorCity friendly fire's loop");
+                            int dmg = 0;
+                            if (pLoopTile.hasCity())
+                            {
+                                City city = pLoopTile.city();
+                             
+                                dmg = attackingUnit.attackCityDamage(pFromTile, city, bCritical: false, percent);
+                                if (dmg < 1)
+                                    continue;
+                                if (forReal)
+                                {
+                                    city.changeDamage(dmg);
+                                    outcomes.Add(city.getHP() == 0 ? Unit.AttackOutcome.CAPTURED : Unit.AttackOutcome.CITY);
+                                    city.processYield(info.Globals.DISCONTENT_YIELD, info.Globals.CITY_ATTACKED_DISCONTENT);
+                                    cityHP = city.getHP();
+                                }
+                                else 
+                                    cityHP = Math.Max(0, city.getHP() - dmg);
+                            }
+                            else
+                            {
+                               
+                                dmg = attackingUnit.attackUnitDamage(pFromTile, pLoopDefendingUnit, false, percent, -1, true);
+                                if (dmg < 1)
+                                    continue;
+                                if (forReal)
+                                {
+                                    aiAdditionalDefendingUnits.Add(pLoopDefendingUnit.getID());
+                                    pLoopDefendingUnit.changeDamage(dmg, true); //friendly fire never kills
+                                    outcomes.Add(Unit.AttackOutcome.NORMAL);
+                                }
+                                else
+                                    targetedDmg = dmg;
+                            }
+
+                            if (forReal)
+                                g.addTileTextAllPlayers(ref azTileTexts, pLoopTile.getID(), () => "-" + dmg + " HP");
+                        }
+                    }
+                }
+                return (cityHP, targetedDmg);
+            }
+
             private static void SendTileTextAll(string v, int tileID, Game g)
             {              
                 for (PlayerType playerType = (PlayerType)0; playerType < g.getNumPlayers(); playerType++)
@@ -976,6 +1011,7 @@ namespace dynamicHarmony
                     }
                 }
             }
+
 
             [HarmonyPatch(typeof(Unit), nameof(Unit.tile))]
             // public virtual void updateUnitAttackPreviewSelection()
