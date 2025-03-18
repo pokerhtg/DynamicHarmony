@@ -21,15 +21,15 @@ namespace DynamicUnits
         protected override int AI_HAPPINESS_VALUE => (base.AI_HAPPINESS_VALUE - (1 + gameTurn/10) * offset) //gets less important as game turn ticks on, for most (positive offset) AIs
                                                             * (vp2Win < 100? 2 * vp2Win: 100) / 100; //VP2Win % modifier
         protected override int AI_ORDERS_VALUE =>  base.AI_ORDERS_VALUE + 20 * offset;
-        protected override int AI_MONEY_VALUE => 5 + offset/2;
-        protected override int AI_TRAINING_VALUE => base.AI_TRAINING_VALUE- offset;
-        protected override int AI_GOODS_VALUE => AI_MONEY_VALUE * 4;
+        protected override int AI_MONEY_VALUE => Math.Max(3, 20 + offset/2 - gameTurn/10); //money worth less overtime
+        protected override int AI_TRAINING_VALUE => base.AI_TRAINING_VALUE - offset;
+        protected override int AI_GOODS_VALUE => AI_MONEY_VALUE * 4 + gameTurn/10;
         protected override int AI_MONEY_STOCKPILE_TURNS => base.AI_MONEY_STOCKPILE_TURNS + offset;
         protected override int AI_NUM_GOODS_TARGET => base.AI_NUM_GOODS_TARGET + 20 * offset;
 
         protected override int AI_NO_WONDER_TURNS => base.AI_NO_WONDER_TURNS + offset;
        
-        protected override int AI_VP_VALUE => (base.AI_VP_VALUE - 30 * (10 + offset) + gameTurn * (gameTurn - 20) / 15) * (vp2Win < 20 ? (150 - vp2Win): 100) /100; //800 from xml; each player gets an offset that lowers importance, but also gets more interested in VP as game turns tick on, and gets up to 50% more interested in VP as they close in on a VP victory
+        protected override int AI_VP_VALUE => (base.AI_VP_VALUE - 30 * (5 + offset) + gameTurn * (gameTurn - 20) / 20) * (vp2Win < 25 ? (160 - 2 * vp2Win): 100) /100; //800 from xml; each player gets an offset that lowers importance, but also gets more interested in VP as game turns tick on, and gets up to 50% more interested in VP as they close in on a VP victory
         protected override int AI_UNIT_SCOUT_VALUE => base.AI_UNIT_SCOUT_VALUE + offset;
 
         protected override int AI_UNIT_GENERAL_VALUE => base.AI_UNIT_GENERAL_VALUE + 20 * offset;

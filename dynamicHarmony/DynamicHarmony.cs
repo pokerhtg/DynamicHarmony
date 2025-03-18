@@ -319,7 +319,7 @@ namespace dynamicHarmony
                 if (debug)
                     Debug.Log("entering post attack preview");
               //  if (!bCheckHostile || __result != 0)
-               //     return;
+              //      return;
               
                 Game g = __instance.game();
                 if (pFromUnit == null || g.isHostileUnitUnit(pFromUnit, __instance))
@@ -331,56 +331,6 @@ namespace dynamicHarmony
                     return;
                 List<TileText> textz = new List<TileText>();
                 __result = friendlyFire(pFromUnit, pMouseoverTile, pFromTile, ref textz, targetTile: ownTile, forReal: false).Item2;
-            /**    for (AttackType eLoopAttack = 0; eLoopAttack < g.infos().attacksNum(); eLoopAttack++)
-                {
-                    int iValue = pFromUnit.attackValue(eLoopAttack);
-                    if (iValue > 0)
-                    {
-                        if (debug)
-                            Debug.Log("can attack " + eLoopAttack + " with a power of " + iValue);
-                        using (var tilesScoped = CollectionCache.GetListScoped<int>())
-                        {        
-                            pFromTile.getAttackTiles(tilesScoped.Value, pMouseoverTile, pFromUnit.getType(), eLoopAttack, iValue);
-                            if (debug)
-                                Debug.Log(String.Format("found {0} tiles. mouseover: ({1}, {2})",tilesScoped.Value.Count, pMouseoverTile.getX(), pMouseoverTile.getY()));
-                            foreach (int iLoopTile in tilesScoped.Value)
-                            {
-                                Tile potentialTargetTile = g.tile(iLoopTile);
-                                if (debug)
-                                   Debug.Log(String.Format("({2}, {3}) is considering the impact of attacking ({0}, {1})", potentialTargetTile.getX(), potentialTargetTile.getY(), ownTile.getX(), ownTile.getY()));
-
-                                if (pFromTile == potentialTargetTile) 
-                                { 
-                                    continue; //for now, let's disble friendly fire on self
-                                }
-                                if (potentialTargetTile == ownTile)
-                                {
-                                    if (debug)
-                                        Debug.Log("I'm hit!!");
-
-                                    if (ownTile.hasCity())
-                                    {
-                                     //   __result = pFromUnit.attackCityDamage(pFromTile, potentialTargetTile.city(), pFromUnit.attackPercent(eLoopAttack), false);
-                                    }
-                                    //then damage anyway. AKA friendly fire
-                                    else
-                                    {
-                                        int atkPercent = pFromUnit.attackPercent(eLoopAttack);
-                                        if (pFromUnit.info().mbMelee)
-                                        {
-                                            //melee units don't do much friendly fire...
-                                            atkPercent /= 3;
-                                        }
-                                        __result += pFromUnit.attackUnitDamage(pFromTile, __instance, false, atkPercent, bCheckOurUnits:false);
-                                        if (__result >= __instance.getHP())
-                                            __result = __instance.getHP() -1; // friendly fire is now no longer deadly
-                                       
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } **/
             }
    
             [HarmonyPatch(nameof(Unit.attackEffectPreview))]
@@ -409,7 +359,7 @@ namespace dynamicHarmony
                 }
 
               
-                if (isSkirmishing(pFromUnit, pMouseoverTile, __instance, out defenderEffect)) 
+                if (isSkirmishing(pFromUnit, mouseOverMe ? pFromUnit.tile() : pMouseoverTile, __instance, out defenderEffect)) 
                 {
                     //Special!
                     if (pFromUnit.getPushTile(__instance, pMouseoverTile, pToTile) == null)
@@ -431,7 +381,7 @@ namespace dynamicHarmony
                           pFromUnit.canAdvanceAfterAttack(pMouseoverTile, pToTile, __instance, true, true, pActingPlayer)) //if a unit can/will rout, let it rout and disable kiting
                         return true;
 
-                    if (pFromUnit.canAttackUnitOrCity(pMouseoverTile, pToTile, pActingPlayer) && !pFromUnit.isFatigued() && !pFromUnit.isMarch()) //kite condition: has moves left and hitting
+                    if (pFromUnit.canAttackUnitOrCity(mouseOverMe ? pFromUnit.tile() : pMouseoverTile, pToTile, pActingPlayer) && !pFromUnit.isFatigued() && !pFromUnit.isMarch()) //kite condition: has moves left and hitting
                     {
                         var txt2 = g.HelpText.getGenderedEffectUnitName(g.infos().effectUnit(attackerEffect), pFromUnit.getGender());
                         builder.AddTEXT(txt2);
@@ -622,7 +572,7 @@ namespace dynamicHarmony
                                     outcomes.Add(Unit.AttackOutcome.NORMAL);
                                 }
                                 else
-                                    targetedDmg = dmg;
+                                    targetedDmg += dmg;
                             }
 
                             if (forReal)

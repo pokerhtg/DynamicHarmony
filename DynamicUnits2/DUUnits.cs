@@ -280,6 +280,7 @@ namespace DynamicUnits
        
       public override int attackUnitDamage(Tile pFromTile, Unit pToUnit, bool bCritical, int iPercent = 100, int iExistingDamage = -1, bool bCheckOurUnits = true, int iExtraModifier = 0)
       {
+           // base.attackUnitDamage
           Tile pToTile = pToUnit.tile();
           int iToUnitHP = iExistingDamage == -1 ? pToUnit.getHP() : Math.Max(0, pToUnit.getHP() - iExistingDamage);
           if (iPercent < 1)
@@ -289,25 +290,8 @@ namespace DynamicUnits
           else
           {
               iPercent /= (getCooldown() == infos().Globals.ROUT_COOLDOWN) ? 2: 1;
-              int atkStr = attackUnitStrength(pFromTile, pToTile, pToUnit, bCheckOurUnits, iExtraModifier);    
-              int defStr = pToUnit.defendUnitStrength(pToTile, this);
-          
-              int iDamage = infos().Helpers.getAttackDamage(atkStr, defStr, iPercent);
-            
-              if (bCritical && criticalChanceVs(pToUnit) > 0)
-              {
-                  iDamage *= 2;
-              }
-
-              if (pToUnit.hasLastStand() && (iToUnitHP > 1))
-              {
-                  if (iDamage >= iToUnitHP)
-                  {
-                      iDamage = (iToUnitHP - 1);
-                  }
-              }
-
-              return Math.Min(iDamage, iToUnitHP);
+              return base.attackUnitDamage(pFromTile, pToUnit, bCritical, iPercent, iExistingDamage, bCheckOurUnits, iExtraModifier);
+              
           }
       }
     }
