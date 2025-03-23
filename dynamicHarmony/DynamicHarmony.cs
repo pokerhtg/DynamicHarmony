@@ -282,6 +282,7 @@ namespace dynamicHarmony
             ///for Charge
             static bool Prefix(ref Unit __instance, ref int __result, Unit pFromUnit, ref Tile pMouseoverTile)
             {
+                bool mouseOverEnemy = pMouseoverTile != null && pFromUnit != null && pMouseoverTile.hasHostileUnit(pFromUnit.getTeam());
                 var currTile = __instance.tile();
                 Tile impactTile;
                 if (currTile == pMouseoverTile && currTile.hasHostileUnit(pFromUnit.getTeam()) && tryCharge(pFromUnit, out impactTile, pFromUnit.tile(), currTile))
@@ -293,9 +294,9 @@ namespace dynamicHarmony
                     
                 }
 
-                else if (__instance != pFromUnit && pMouseoverTile != currTile && tryCharge(pFromUnit, out impactTile, pMouseoverTile, currTile))
+                else if (__instance != pFromUnit && pMouseoverTile != currTile && !mouseOverEnemy && tryCharge(pFromUnit, out impactTile, pMouseoverTile, currTile))
                 {
-                    //mouseover a hex from where the unit can attack me
+                    //mouseover a hex from where the unit can attack me, and that tile doesn't have a target
                     pMouseoverTile = impactTile; //fake the mouseover tile, then let the damage preview take over
                     return true;
                 }
@@ -318,8 +319,8 @@ namespace dynamicHarmony
             {
                 if (debug)
                     Debug.Log("entering post attack preview");
-              //  if (!bCheckHostile || __result != 0)
-              //      return;
+                if (__instance == pFromUnit) //needed for displaying counter damage
+                    return;
               
                 Game g = __instance.game();
                 if (pFromUnit == null || g.isHostileUnitUnit(pFromUnit, __instance))
@@ -347,10 +348,10 @@ namespace dynamicHarmony
 
                 bool bKite = isKite == specialMoveCodeAttacker;
                 bool special = false;
-                bool mouseOverMe = pMouseoverTile == pToTile;
-                    
 
-                if (tryCharge(pFromUnit, out _, mouseOverMe? pFromUnit.tile() : pMouseoverTile, pToTile))
+                bool mouseoverEnemy = pMouseoverTile.hasHostileUnit(pFromUnit.getTeam());
+
+                if (tryCharge(pFromUnit, out _, mouseoverEnemy? pFromUnit.tile() : pMouseoverTile, pToTile))
                 {
                     var charge = g.HelpText.getGenderedEffectUnitName(g.infos().effectUnit(getEffectName(pFromUnit.getEffectUnits(), "CHARGE", g.infos())), pFromUnit.getGender());
                     builder.AddTEXT(charge);
@@ -359,7 +360,7 @@ namespace dynamicHarmony
                 }
 
               
-                if (isSkirmishing(pFromUnit, mouseOverMe ? pFromUnit.tile() : pMouseoverTile, __instance, out defenderEffect)) 
+                if (isSkirmishing(pFromUnit, mouseoverEnemy ? pFromUnit.tile() : pMouseoverTile, __instance, out defenderEffect)) 
                 {
                     //Special!
                     if (pFromUnit.getPushTile(__instance, pMouseoverTile, pToTile) == null)
@@ -381,7 +382,7 @@ namespace dynamicHarmony
                           pFromUnit.canAdvanceAfterAttack(pMouseoverTile, pToTile, __instance, true, true, pActingPlayer)) //if a unit can/will rout, let it rout and disable kiting
                         return true;
 
-                    if (pFromUnit.canAttackUnitOrCity(mouseOverMe ? pFromUnit.tile() : pMouseoverTile, pToTile, pActingPlayer) && !pFromUnit.isFatigued() && !pFromUnit.isMarch()) //kite condition: has moves left and hitting
+                    if (pFromUnit.canAttackUnitOrCity(mouseoverEnemy ? pFromUnit.tile() : pMouseoverTile, pToTile, pActingPlayer) && !pFromUnit.isFatigued() && !pFromUnit.isMarch()) //kite condition: has moves left and hitting
                     {
                         var txt2 = g.HelpText.getGenderedEffectUnitName(g.infos().effectUnit(attackerEffect), pFromUnit.getGender());
                         builder.AddTEXT(txt2);
@@ -511,7 +512,7 @@ namespace dynamicHarmony
                 var g = attackingUnit.game();
                 var info = g.infos();
                 int cityHP = -1;
-                int targetedDmg = targetTile == null ? -1 : 0;
+                int targetedDmg = 0;
 
                 for (AttackType eLoopAttack = 0; eLoopAttack < info.attacksNum(); eLoopAttack++)
                 {

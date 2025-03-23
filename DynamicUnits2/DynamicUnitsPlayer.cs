@@ -85,8 +85,8 @@ namespace DynamicUnits
 
             int cost = infos().utils().modify(infoTech.miCost, infos().Globals.TECH_GLOBAL_MODIFIER);
 
-            const int MAXDISCOUNT = 96; //won't end up this high, thanks to integer division, plus the spooky phantom 1 tile away
-
+            const int MAXDISCOUNT = 93; //won't end up this high, thanks to integer division, plus the spooky phantom 1 tile away
+            float factor = 0.7f; //to scale down discount a bit, so it doesn't get too crazy
             int distanceFactor = 0;
             int knownNations = 0;
             int uncontactedNation = 0;
@@ -154,9 +154,14 @@ namespace DynamicUnits
             
             if (eligibleNations == 1) //unique tech just for you
                 discount = (MAXDISCOUNT + discount) / 2;
-           
+
+            discount = (int) (discount * factor); //scale down discount a bit
+
             discount = Math.Min(MAXDISCOUNT, discount);
             discount = Math.Max(0,discount); //worst case is no discount, not negative discount
+
+            discount = (discount / 5) * 5; //round down to the nearest 5
+
             why.Add(cost);
             why.Add(knownNations - uncontactTechedNation);
             why.Add(eligibleNations - 1 - uncontactedNation);     //let's not display the phantom to player...may be too spooky

@@ -18,30 +18,31 @@ namespace DynamicUnits
         protected int vp2Win => game == null || player == null || player.getTeam() == TeamType.NONE || !game.areVictoryPointsRelevant() ? 200: game.getVPToWin() - game.countTeamVPs(player.getTeam());
         protected override int AI_MAX_WATER_CONTROL_DISTANCE => 15;
         protected override int AI_CULTURE_VALUE => base.AI_CULTURE_VALUE + offset + gameTurn/15; //70 ish
-        protected override int AI_HAPPINESS_VALUE => (base.AI_HAPPINESS_VALUE - (1 + gameTurn/10) * offset) //gets less important as game turn ticks on, for most (positive offset) AIs
-                                                            * (vp2Win < 100? 2 * vp2Win: 100) / 100; //VP2Win % modifier
+        protected override int AI_HAPPINESS_VALUE => Math.Max(5, (base.AI_HAPPINESS_VALUE - gameTurn/8 * (3 + offset)) //gets less important as game turn ticks on, for most (positive offset) AIs
+                                                            * (vp2Win < 100? 2 * vp2Win: 100) / 100); //VP2Win % modifier
         protected override int AI_ORDERS_VALUE =>  base.AI_ORDERS_VALUE + 20 * offset;
-        protected override int AI_MONEY_VALUE => Math.Max(3, 20 + offset/2 - gameTurn/10); //money worth less overtime
+        protected override int AI_MONEY_VALUE => Math.Max(3, 15 + offset/2 - gameTurn/12); //money worth less overtime, xml states 10
         protected override int AI_TRAINING_VALUE => base.AI_TRAINING_VALUE - offset;
-        protected override int AI_GOODS_VALUE => AI_MONEY_VALUE * 4 + gameTurn/10;
+        protected override int AI_GOODS_VALUE => AI_MONEY_VALUE * 5 + gameTurn/5 -offset;
         protected override int AI_MONEY_STOCKPILE_TURNS => base.AI_MONEY_STOCKPILE_TURNS + offset;
-        protected override int AI_NUM_GOODS_TARGET => base.AI_NUM_GOODS_TARGET + 20 * offset;
-
+        protected override int AI_NUM_GOODS_TARGET => base.AI_NUM_GOODS_TARGET + 200 * offset; //2000 from xml
+        protected override int AI_UNIT_SETTLER_VALUE => Math.Max(base.AI_UNIT_SETTLER_VALUE / 3, base.AI_UNIT_SETTLER_VALUE - 10 * offset * gameTurn * gameTurn); //500,000, so it's valuing less as game ticks on
         protected override int AI_NO_WONDER_TURNS => base.AI_NO_WONDER_TURNS + offset;
        
-        protected override int AI_VP_VALUE => (base.AI_VP_VALUE - 30 * (5 + offset) + gameTurn * (gameTurn - 20) / 20) * (vp2Win < 25 ? (160 - 2 * vp2Win): 100) /100; //800 from xml; each player gets an offset that lowers importance, but also gets more interested in VP as game turns tick on, and gets up to 50% more interested in VP as they close in on a VP victory
+        protected override int AI_VP_VALUE => (base.AI_VP_VALUE - 20 * (5 + offset) + gameTurn * (gameTurn - 10) / 20) * (vp2Win < 25 ? (160 - 2 * vp2Win): 100) /100; //800 from xml; each player gets an offset that lowers importance, but also gets more interested in VP as game turns tick on, and gets up to 50% more interested in VP as they close in on a VP victory
         protected override int AI_UNIT_SCOUT_VALUE => base.AI_UNIT_SCOUT_VALUE + offset;
 
         protected override int AI_UNIT_GENERAL_VALUE => base.AI_UNIT_GENERAL_VALUE + 20 * offset;
 
         protected override int AI_YIELD_TURNS => base.AI_YIELD_TURNS + offset  //100 is the default
                                     - Math.Max(gameTurn / 5, (80 - 4 * vp2Win));// //AI presumes fewer turns of game left if close to winning or as game turn ticks on, whichever is bigger
+        protected override int AI_TURNS_BETWEEN_KILLS => Math.Max(10, (base.AI_TURNS_BETWEEN_KILLS + offset) * (110 - gameTurn / 2) / 100); //turns between kills is modified by a percent based on current game turn
+        
         protected override int AI_UNIT_RANDOM_PROMOTION_VALUE => base.AI_UNIT_PROMOTE_VALUE/3*2;
-            
+
         protected override int AI_TRADE_NETWORK_VALUE_ESTIMATE => base.AI_TRADE_NETWORK_VALUE_ESTIMATE * (26 + offset) / 26;
-        protected override int AI_BUILD_URBAN_VALUE => base.AI_BUILD_URBAN_VALUE + 2 * offset;
-        //  protected override int AI_IDLE_XP_VALUE /= 2;
-        //  protected override int AI_CITY_REBEL_VALUE /= 2;
+        protected override int AI_BUILD_URBAN_VALUE => base.AI_BUILD_URBAN_VALUE + 3 * offset;
+       
         protected override int AI_MAX_FORT_BORDER_DISTANCE_INSIDE => base.AI_MAX_FORT_BORDER_DISTANCE_INSIDE + offset/2;
         protected override int AI_MAX_FORT_RIVAL_BORDER_DISTANCE => base.AI_MAX_FORT_RIVAL_BORDER_DISTANCE + (12-offset);
         protected override int AI_MAX_FORT_BORDER_DISTANCE_OUTSIDE => AI_MAX_FORT_BORDER_DISTANCE_INSIDE/2;
@@ -56,7 +57,7 @@ namespace DynamicUnits
         public override long getFortValue(ImprovementType eImprovement, Tile pTile)
         {
             //defense structures aren't that important
-            return base.getFortValue(eImprovement, pTile) * 4 / 5;  
+            return base.getFortValue(eImprovement, pTile) / (100 + AI_GOODS_VALUE + offset * 5) * 100;  
         }
        
         protected override long calculateUnitValue(UnitType eUnit)
