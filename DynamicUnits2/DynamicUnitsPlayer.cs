@@ -61,12 +61,37 @@ namespace DynamicUnits
                 return diffusedTechCost(eTech, out _);
             }
         }
-        protected override void doEventTriggers()
+       
+        public override void doEventPlayer()
         {
-            //add a lot of playerevent triggers to be fairer to AI when event level is high
-            base.doEventTriggers();
+            if (isTeamHuman() || !game().isCharacters())
+            {
+                return;
+            }
+            int boni = game().randomNext(3);
             if (game().randomNext(game().eventLevel().miTurns) == 0)
-                doEventPlayer();
+                boni++;  //if we are lucky, we get an extra bonus
+            if (game().eventLevel().miPercent > game().randomNext(101))
+                boni++;  //if event level is high, we get another bonus
+            
+            ReleasePool<List<(EventPlayerType, int)>>.AcquireScope acquireScope = CollectionCache.GetListScoped<(EventPlayerType, int)>();
+            List<(EventPlayerType, int)> value = acquireScope.Value;
+            for (EventPlayerType eventPlayerType = (EventPlayerType)0; eventPlayerType < infos().eventPlayersNum(); eventPlayerType++)
+            {
+                if (canDoBonus(infos().eventPlayer(eventPlayerType).meBonus) && infos().eventPlayer(eventPlayerType).miDie > 0)
+                {
+                    value.Add((eventPlayerType, infos().eventPlayer(eventPlayerType).miDie));
+                }
+            }
+            
+            for (int i = 0; i < boni; ++i)
+            {
+                EventPlayerType eventPlayerType2 = infos().utils().randomDieMap(value, game().nextSeed(), EventPlayerType.NONE);
+                if (eventPlayerType2 != EventPlayerType.NONE)
+                {
+                    doBonus(infos().eventPlayer(eventPlayerType2).meBonus);
+                }
+            }
         }
 
         public int diffusedTechCost(TechType eTechnology, out List<int> why)
@@ -85,7 +110,7 @@ namespace DynamicUnits
 
             int cost = infos().utils().modify(infoTech.miCost, infos().Globals.TECH_GLOBAL_MODIFIER);
 
-            const int MAXDISCOUNT = 93; //won't end up this high, thanks to integer division, plus the spooky phantom 1 tile away
+            const int MAXDISCOUNT = 99; //won't end up this high, thanks to integer division, plus the spooky phantom 1 tile away
             float factor = 0.7f; //to scale down discount a bit, so it doesn't get too crazy
             int distanceFactor = 0;
             int knownNations = 0;
@@ -93,7 +118,7 @@ namespace DynamicUnits
             int uncontactTechedNation = 0; //uncontacted nation that knows the tech
             int eligibleNations = 1;//a phantom! 
             int totalDistFactor = 2; //phantom lives 140 hexes away
-
+            bool alone = true;
             why = new List<int>();
             var capital = capitalCity().tile();
 
@@ -113,8 +138,8 @@ namespace DynamicUnits
                 if (p.isTechAcquired(eTechnology))
                 {
                     knownNations++;
-                    if (game().isTeamContact(this.getTeam(), p.getTeam()))
-                        distanceFactor += 300 / dist;
+                    if (game().isTeamContact(getTeam(), p.getTeam()))
+                        distanceFactor += 400 / dist;
                     else
                     { 
                         uncontactTechedNation++;
@@ -124,14 +149,19 @@ namespace DynamicUnits
                 if (p.isTechValid(eTechnology, true))
                 {
                     eligibleNations++;
-                    if (game().isTeamContact(this.getTeam(), p.getTeam()))
-                        totalDistFactor += 300 / dist;
+                    if (game().isTeamContact(getTeam(), p.getTeam()))
+                    {
+                        totalDistFactor += 400 / dist;
+                        alone = false;
+                    }
                     else
                     {
                         uncontactedNation++;
                     }
                 }
             }
+            if (alone) //haven't met anyone yet
+                return cost;
 
             int discount = MAXDISCOUNT * knownNations * distanceFactor * distanceFactor/ totalDistFactor / totalDistFactor / eligibleNations; //distance matter more than number of players
 
@@ -145,7 +175,7 @@ namespace DynamicUnits
            
             discount -= (int)Math.Pow(difficulty, 1.8); //playing on harder difficulties? research gets harder (42% on Great)
 
-            discount += 46; //standard discount is 46%, compensated in globalsxml's tech cost, to make people feel better about getting a discount most of the time
+            discount += 50; //standard discount is 50%, compensated in globalsxml's tech cost, to make people feel better about getting a discount most of the time
 
             discount = discount * (eligibleNations - uncontactedNation) / eligibleNations; //partial info displayed to players; let's limit discount let's slow down the roll to reduce confusion; uncontacted nations reduce the discount
 

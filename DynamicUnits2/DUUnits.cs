@@ -147,7 +147,7 @@ namespace DynamicUnits
         /// <param name="eOutcome"></param>
         /// <param name="bEvent"></param>
         /// <returns></returns>
-        protected override int attackTile(Tile pFromTile, Tile pToTile, bool bTargetTile, int iAttackPercent, Player pActingPlayer, ref List<TileText> azTileTexts, out AttackOutcome eOutcome, ref bool bEvent)
+        protected override int attackTile(Tile pFromTile, Tile pToTile, bool bTargetTile, int iAttackPercent, Player pActingPlayer, List<TileText> azTileTexts, out AttackOutcome eOutcome, ref bool bEvent)
         {
             int xp;
             Unit pDefendingUnit;
@@ -213,9 +213,9 @@ namespace DynamicUnits
                 }
             }
             if (!promoted)
-                doXP(xp, ref azTileTexts);
+                doXP(xp, azTileTexts);
 
-            return base.attackTile(pFromTile, pToTile, bTargetTile, iAttackPercent, pActingPlayer, ref azTileTexts, out eOutcome, ref bEvent);
+            return base.attackTile(pFromTile, pToTile, bTargetTile, iAttackPercent, pActingPlayer, azTileTexts, out eOutcome, ref bEvent);
 
             void DUXP()
             {
@@ -234,7 +234,7 @@ namespace DynamicUnits
 
                         if (bTargetTile)
                         { //main attack, not a AoE
-                            xp += info().mbMelee ? pDefendingUnit.modifiedStrength() / 10 : infos().Globals.BASE_DAMAGE;
+                            xp += info().mbMelee ? pDefendingUnit.modifiedDefense() / 10 : 3; //melee gets 4-6xp on avg, ranged only 3
                         }
                         else
                         {
@@ -269,13 +269,13 @@ namespace DynamicUnits
             return valid;
         }
 
-        protected override void doXP(int multiplier, ref List<TileText> azTileTexts)
+        protected override void doXP(int multiplier, List<TileText> azTileTexts)
        {
             if (multiplier <= infos().Globals.BASE_DAMAGE / 2) //ignore tiny xp gains; reduce text notification noises. Also means base game attack xp gains are ignored
                 return;
          
             else 
-               base.doXP(multiplier, ref azTileTexts);
+               base.doXP(multiplier, azTileTexts);
        }
        
       public override int attackUnitDamage(Tile pFromTile, Unit pToUnit, bool bCritical, int iPercent = 100, int iExistingDamage = -1, bool bCheckOurUnits = true, int iExtraModifier = 0)
@@ -294,5 +294,6 @@ namespace DynamicUnits
               
           }
       }
+      
     }
 }

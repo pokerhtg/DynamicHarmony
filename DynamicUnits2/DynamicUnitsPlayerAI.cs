@@ -16,8 +16,8 @@ namespace DynamicUnits
         protected int offset => player == null? 5: (player.getCapitalCityID() *2 + 3* player.getFounderID()) % 7  - 2; //-2 to 5
         protected int gameTurn => game == null? 0 : game.getTurn();
         protected int vp2Win => game == null || player == null || player.getTeam() == TeamType.NONE || !game.areVictoryPointsRelevant() ? 200: game.getVPToWin() - game.countTeamVPs(player.getTeam());
-        protected override int AI_MAX_WATER_CONTROL_DISTANCE => 15;
-        protected override int AI_CULTURE_VALUE => base.AI_CULTURE_VALUE + offset + gameTurn/15; //70 ish
+       // protected override int AI_MAX_WATER_CONTROL_DISTANCE => 15;
+        protected override int AI_CULTURE_VALUE => base.AI_CULTURE_VALUE + 5 * offset + gameTurn/10; //100 ish
         protected override int AI_HAPPINESS_VALUE => Math.Max(5, (base.AI_HAPPINESS_VALUE - gameTurn/8 * (3 + offset)) //gets less important as game turn ticks on, for most (positive offset) AIs
                                                             * (vp2Win < 100? 2 * vp2Win: 100) / 100); //VP2Win % modifier
         protected override int AI_ORDERS_VALUE =>  base.AI_ORDERS_VALUE + 20 * offset;
@@ -29,7 +29,8 @@ namespace DynamicUnits
         protected override int AI_UNIT_SETTLER_VALUE => Math.Max(base.AI_UNIT_SETTLER_VALUE / 3, base.AI_UNIT_SETTLER_VALUE - 10 * offset * gameTurn * gameTurn); //500,000, so it's valuing less as game ticks on
         protected override int AI_NO_WONDER_TURNS => base.AI_NO_WONDER_TURNS + offset;
        
-        protected override int AI_VP_VALUE => (base.AI_VP_VALUE - 20 * (5 + offset) + gameTurn * (gameTurn - 10) / 20) * (vp2Win < 25 ? (160 - 2 * vp2Win): 100) /100; //800 from xml; each player gets an offset that lowers importance, but also gets more interested in VP as game turns tick on, and gets up to 50% more interested in VP as they close in on a VP victory
+        protected override int AI_VP_VALUE => (base.AI_VP_VALUE - 20 * (5 + offset) + gameTurn * (gameTurn - 10) / 20) * (vp2Win < 25 ? (160 - 2 * vp2Win): 100) /100; 
+        //800 from xml; each player gets an offset that lowers importance, but also gets more interested in VP as game turns tick on, and gets up to 50% more interested in VP as they close in on a VP victory
         protected override int AI_UNIT_SCOUT_VALUE => base.AI_UNIT_SCOUT_VALUE + offset;
 
         protected override int AI_UNIT_GENERAL_VALUE => base.AI_UNIT_GENERAL_VALUE + 20 * offset;
