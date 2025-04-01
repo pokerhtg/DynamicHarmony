@@ -15,6 +15,10 @@ namespace DynamicUnits
         {
             return new DUUnitAI() ;
         }
+        public override City CreateCity()
+        {
+            return new DUCity();
+        }
         public override InfoHelpers CreateInfoHelpers(Infos pInfos)
         {
             return new DynamicUnitsInfoHelper(pInfos);

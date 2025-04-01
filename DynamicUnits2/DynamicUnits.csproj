@@ -119,6 +119,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DUCity.cs" />
     <Compile Include="DUGame.cs" />
     <Compile Include="DUHelpText.cs" />
     <Compile Include="DUTiles.cs" />

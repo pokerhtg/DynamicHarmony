@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Xml.Linq;
 using TenCrowns.GameCore;
 using UnityEngine;
-using static TenCrowns.GameCore.Player;
 
 namespace DynamicUnits
 {
@@ -43,10 +42,9 @@ namespace DynamicUnits
 
         protected override int AI_TRADE_NETWORK_VALUE_ESTIMATE => base.AI_TRADE_NETWORK_VALUE_ESTIMATE * (26 + offset) / 26;
         protected override int AI_BUILD_URBAN_VALUE => base.AI_BUILD_URBAN_VALUE + 3 * offset;
-       
-        protected override int AI_MAX_FORT_BORDER_DISTANCE_INSIDE => base.AI_MAX_FORT_BORDER_DISTANCE_INSIDE + offset/2;
+      
         protected override int AI_MAX_FORT_RIVAL_BORDER_DISTANCE => base.AI_MAX_FORT_RIVAL_BORDER_DISTANCE + (12-offset);
-        protected override int AI_MAX_FORT_BORDER_DISTANCE_OUTSIDE => AI_MAX_FORT_BORDER_DISTANCE_INSIDE/2;
+        protected override int AI_MAX_FORT_BORDER_DISTANCE_OUTSIDE => base.AI_MAX_FORT_BORDER_DISTANCE_OUTSIDE + (2+offset)/3;
         
 
         protected override bool isFoundCitySafe(Tile pTile)
@@ -58,9 +56,13 @@ namespace DynamicUnits
         public override long getFortValue(ImprovementType eImprovement, Tile pTile)
         {
             //defense structures aren't that important
-            return base.getFortValue(eImprovement, pTile) / (100 + AI_GOODS_VALUE + offset * 5) * 100;  
+            return base.getFortValue(eImprovement, pTile) / (150 + AI_GOODS_VALUE + offset * 5) * 100;  
         }
-       
+        public override long getLegitimacyValue(int iLegitimacyChange)
+        {
+            return base.getLegitimacyValue(iLegitimacyChange) * (110 + offset * 5) / 100; 
+        }
+
         protected override long calculateUnitValue(UnitType eUnit)
         {
             long val = base.calculateUnitValue(eUnit);

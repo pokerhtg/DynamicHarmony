@@ -61,7 +61,7 @@ namespace DynamicUnits
                 return diffusedTechCost(eTech, out _);
             }
         }
-       
+  
         public override void doEventPlayer()
         {
             if (isTeamHuman() || !game().isCharacters())
@@ -160,7 +160,7 @@ namespace DynamicUnits
                     }
                 }
             }
-            if (alone) //haven't met anyone yet
+            if (alone || game().getTurn() < 2) //haven't met anyone yet
                 return cost;
 
             int discount = MAXDISCOUNT * knownNations * distanceFactor * distanceFactor/ totalDistFactor / totalDistFactor / eligibleNations; //distance matter more than number of players

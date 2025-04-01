@@ -40,13 +40,34 @@ namespace DynamicUnits
                 return true;
             return base.canStack(eUnit);
         }
-
-        public override bool isEmergencyUnit(UnitType eUnit)
+        public override int turnsLeft(int iThresholdWhole, int iProgress, int iRate)
         {
-            return base.isEmergencyUnit(eUnit) || !mInfos.unit(eUnit).mbGeneral; //no general is a sign of emergency unit; update me once a better flag is available
+            if (iRate > 0)
+            {
+                int num = (iThresholdWhole * 10 - iProgress) / iRate;
+                if (Math.Abs(iProgress + iRate * num) < Math.Abs(iThresholdWhole * 10))
+                {
+                    num++;
+                }
+
+                return Math.Max(1, num);
+            }
+
+            if (iRate < 0)
+            {
+                int num2 = iProgress / -iRate;
+                if (iProgress % -iRate > 0)
+                {
+                    num2++;
+                }
+
+                return Math.Max(-1, num2);
+            }
+
+            return 0;
         }
 
-        //begin new methods
+        //***************************begin new methods*********************************
         public bool isMountaineer(UnitType eUnit)
         {
             //a nonwater unit that can anchor is a mountaineer

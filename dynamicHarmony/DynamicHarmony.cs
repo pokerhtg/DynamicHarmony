@@ -791,44 +791,6 @@ namespace dynamicHarmony
             {
                 throw new NotImplementedException("It's a stub");
             }
-
-            [HarmonyPatch(nameof(Unit.UnitAI.movePriorityCompare))]
-            // public virtual int movePriorityCompare(Unit pOther)
-            ///friendly fire AI--move the AoE first, so we bombard then charge
-            static bool Prefix(ref int __result, Unit.UnitAI __instance, Unit ___unit, Game ___game, Unit pOther)
-            {
-                //begin some copy paste of key logic
-                bool flag = __instance.isInTheWay();
-                if (flag != pOther.AI.isInTheWay())
-                {
-                    __result = (flag) ? -1 : 1;
-                    return false;
-                }
-
-                if (__instance.SubRole == Unit.SubRoleType.URGENT != (pOther.AI.SubRole == Unit.SubRoleType.URGENT))
-                {
-                   __result = (__instance.SubRole != Unit.SubRoleType.URGENT) ? 1 : (-1);
-                    return false;
-                }
-                //end of key logic from original to preserve
-
-                int myAoE = -1;
-                int theirAoE = -1;
-                for (AttackType eLoopAttack = 0; eLoopAttack < ___game.infos().attacksNum(); eLoopAttack++) //rough estimate of the best AoE attack's impact
-                {
-                    int estimate = ___unit.attackValue(eLoopAttack) * ___unit.attackPercent(eLoopAttack) * ((int) eLoopAttack + 1); //attack radius * attack percent * attack shape; shape is usually larger as Attack Num increases
-                    myAoE = Math.Max(myAoE, estimate);
-                    estimate = pOther.attackValue(eLoopAttack) * pOther.attackPercent(eLoopAttack) * ((int)eLoopAttack + 1);
-                    theirAoE = Math.Max(theirAoE, estimate);
-                }
-                if (myAoE != theirAoE)
-                {
-                    __result = myAoE > theirAoE ? -1 : 1;
-                    return false;
-                }
-                    
-                return true;
-            }
         } //PatchAI
         [HarmonyPatch(typeof(Infos))]
         public class PatchInfos
@@ -1034,7 +996,7 @@ namespace dynamicHarmony
                                 if (ClientMgr.GameClient.tile(iLoopTile) == city.tile())
                                 {
                                     ___msiAffectedCities.Add(city.getID());
-                                    int iDamagePreviewHP = pFromUnit.attackCityDamage(pFromUnit.tile(), city, bCritical:false, pFromUnit.attackPercent(eLoopAttack));
+                                    int iDamagePreviewHP = pFromUnit.tile() == city.tile()? 0:  pFromUnit.attackCityDamage(pFromUnit.tile(), city, bCritical:false, pFromUnit.attackPercent(eLoopAttack));
                                     UIAttributeTag widget = getCityWidgetTag(__instance, city.getID());
                                  
                                     widget.SetInt("DamagePreviewHP", iDamagePreviewHP);

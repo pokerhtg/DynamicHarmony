@@ -141,7 +141,12 @@ namespace DynamicUnits
             }
             return true;
         }
-
+        public override bool isGameOption(GameOptionType eIndex)
+        {
+            if (eIndex == infos().Globals.GAMEOPTION_PLAY_TO_WIN)
+                return true; //always play to win!
+            else return base.isGameOption(eIndex);
+        }
         public override bool isHostile(TeamType eTeam1, TribeType eTribe1, TeamType eTeam2, TribeType eTribe2)
         {
             //a diplomlatic tribe can never be hostile toward a nondiplomatic one and vice versa
