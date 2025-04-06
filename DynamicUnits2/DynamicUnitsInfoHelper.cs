@@ -66,7 +66,7 @@ namespace DynamicUnits
 
             return 0;
         }
-
+     
         //***************************begin new methods*********************************
         public bool isMountaineer(UnitType eUnit)
         {

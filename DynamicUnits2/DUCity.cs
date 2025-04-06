@@ -30,7 +30,10 @@ namespace DynamicUnits
             return baseResult;
 
         }
-
+        protected override void setBuildProgress(CityQueueData pQueueInfo, int iNewValue, bool bHurry)
+        {
+            base.setBuildProgress(pQueueInfo, Math.Max(0, iNewValue), bHurry);
+        }
         public override int getEffectCityYieldRate(EffectCityType eEffectCity, YieldType eYield, Character pGovernor, bool bComplete = false)
         {
             if (eYield == YieldType.NONE)

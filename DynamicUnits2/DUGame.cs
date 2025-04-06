@@ -1,6 +1,7 @@
 ﻿using Mohawk.SystemCore;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using TenCrowns.ClientCore;
 using TenCrowns.GameCore;
 using TenCrowns.GameCore.Text;
@@ -33,6 +34,31 @@ namespace DynamicUnits
                     }  
                 }
             }
+        }
+        public override int getVPToWin()
+        {
+            return base.getVPToWin() - getNumPlayersInt() * 2 + getCitySiteCount() % 5; //get city site count % 5 is a random factor to make it less predictable
+        }
+        public override int getVPToWinByVictory(VictoryType eVictory, TeamType eTeam)
+        {
+            InfoVictory infoVictory = infos().victory(eVictory);
+
+            int num = (getVPToWin() * infoVictory.miPercentVP + 50) / 100; 
+            if (infoVictory.miOpponentMaxPointPercent != 0) //Double victory; let's use half of max range instead of half of exact VP to win
+            { 
+               (num, _) = getVPRange();
+                num++;
+                num /= 2;
+                for (TeamType teamType = (TeamType)0; teamType < getNumTeams(); teamType++)
+                {
+                    if (isTeamAlive(teamType) && eTeam != teamType)                                                                                                                                                 
+                    {
+                        num = Math.Max(num, (countTeamVPs(teamType) * infoVictory.miOpponentMaxPointPercent + 50) / 100);
+                    }
+                }
+            }
+
+            return num;
         }
         public override bool initFromMapScript(GameParameters pGameParams, MapBuilder pMapBuilder)
         {
@@ -141,12 +167,7 @@ namespace DynamicUnits
             }
             return true;
         }
-        public override bool isGameOption(GameOptionType eIndex)
-        {
-            if (eIndex == infos().Globals.GAMEOPTION_PLAY_TO_WIN)
-                return true; //always play to win!
-            else return base.isGameOption(eIndex);
-        }
+    
         public override bool isHostile(TeamType eTeam1, TribeType eTribe1, TeamType eTeam2, TribeType eTribe2)
         {
             //a diplomlatic tribe can never be hostile toward a nondiplomatic one and vice versa
@@ -155,9 +176,23 @@ namespace DynamicUnits
 
             return infos().diplomacy(getDiplomacy(eTeam1, eTribe1, eTeam2, eTribe2)).mbHostile;
         }
-        
+
 
         //END BLOCK of code to allow tribes to raid
 
+        //begin new methods
+        public (int lower, int upper) getVPRange()
+        {
+            int iPointsNeeded = getVPToWin();
+            int lower = (iPointsNeeded + getCitySiteCount() % 11) * 8 / 10; // 80%, rounded up (ish)
+            lower += iPointsNeeded % 8; 
+            lower = lower / 5 * 5; // round down to nearest 5
+            lower = Math.Min(lower, iPointsNeeded/5*5); 
+            int upper = lower + iPointsNeeded / 5;
+            upper = (upper + getCitySiteCount() % 8) / 5 * 5; // round up (ish) to nearest 5
+            
+            upper = Math.Max(upper, iPointsNeeded / 5 * 5 + 5); // ensure upper is above actual P2W
+            return (lower, upper);
+        }
     }
 }

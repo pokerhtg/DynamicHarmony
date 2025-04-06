@@ -1,11 +1,11 @@
-﻿using Mohawk.UIInterfaces;
+﻿using Mohawk.SystemCore;
+using Mohawk.UIInterfaces;
 using System;
-using System.Diagnostics;
-using System.IO.Ports;
-using System.Reflection;
+using static TenCrowns.GameCore.Text.TextExtensions;
 using TenCrowns.ClientCore;
 using TenCrowns.GameCore;
 using TenCrowns.GameCore.Text;
+using System.Collections.Generic;
 
 namespace DynamicUnits
 {
@@ -29,6 +29,39 @@ namespace DynamicUnits
             return result;
         }
 
+        public override TextVariable buildVPLinkVariable(TeamType eTeam, Game pGame, bool bShowUnmet = true, bool bShowMax = true)
+        {
+            bool bShowPlayerName = (bShowUnmet || pGame.isTeamContact(pGame.manager().getActiveTeam(), eTeam));
+            bool bUsOrAlly = eTeam == pGame.manager().getActiveTeam() || pGame.getTeamAlliance(eTeam) == pGame.manager().getActiveTeam();
+
+            if (pGame.isVictoryEnabled(infos().Globals.POINTS_VICTORY) && bShowMax)
+            {
+                (int lower, int upper) = ((DUGame)pGame).getVPRange();
+                if (bShowPlayerName)
+                    {
+                        int maxLength = (int)Math.Log10(upper) + 1;
+                        ColorType eLinkColor = ColorType.NONE;
+                        if (!bUsOrAlly)
+                        {
+                            if (pGame.countTeamVPs(eTeam) >= lower)
+                            {
+                                eLinkColor = pGame.infos().Globals.COLOR_NEGATIVE;
+                            }
+                            else if (pGame.countTeamVPs(eTeam) >= lower * 90 / 100)
+                            {
+                                eLinkColor = pGame.infos().Globals.COLOR_AVERAGE;
+                            }
+                        }
+                        TextVariable vpVariable = buildLinkTextVariable(buildSlashText(TEXTVAR(pGame.countTeamVPs(eTeam).ToStringCached().PadLeft(maxLength)), TEXTVAR(lower+"-"+upper)), ItemType.HELP_LINK, nameof(LinkType.HELP_VICTORY), ((int)eTeam).ToStringCached(), false.ToStringCached(), eLinkColor: eLinkColor);
+                        return vpVariable;
+                    }
+                    else
+                    {
+                        return buildSlashText(TEXTVAR("?"), TEXTVAR(lower + "-" + upper));
+                    }
+                }
+            else return base.buildVPLinkVariable(eTeam, pGame, bShowUnmet, bShowMax);
+        }
         public override TextBuilder buildTechHelp(TextBuilder builder, TechType eTech, Player pPlayer, ClientManager pManager, bool bHelp = false)
         {
             // UnityEngine.Debug.Log("diffusing?");
@@ -49,7 +82,17 @@ namespace DynamicUnits
                 UnityEngine.Debug.Log(e);
             }
             return output;
-
+        }
+        public override void buildImprovementRequiresHelp(List<TextVariable> lRequirements, ImprovementType eImprovement, Game pGame, Player pActivePlayer, Tile pTile, bool bUpgradeImprovement = false)
+        {
+            base.buildImprovementRequiresHelp(lRequirements, eImprovement, pGame, pActivePlayer, pTile, bUpgradeImprovement);
+            if (pActivePlayer == null)
+                return;
+            if (infos().improvement(eImprovement).mbWonder && pActivePlayer.countActiveLaws() < ((DynamicUnitsPlayer)pActivePlayer).countAllWonders())
+            {
+                lRequirements.Add(buildWarningTextVariable(TEXTVAR_TYPE("TEXT_HELPTEXT_IMPROVEMENT_REQUIRES_MORE_LAWS")));
+            }
+                
         }
         public override TextBuilder buildProjectHelp(TextBuilder builder, ProjectType eProject, City pCity, Game pGame, Player pPlayer, Player pActivePlayer, bool bName = true, bool bTechPrereq = true, bool bCosts = true, bool bDetails = true, bool bEncyclopedia = false, TextBuilder.ScopeType scopeType = TextBuilder.ScopeType.NONE)
         {

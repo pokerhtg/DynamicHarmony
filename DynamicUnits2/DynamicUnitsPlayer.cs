@@ -152,12 +152,15 @@ namespace DynamicUnits
                     if (game().isTeamContact(getTeam(), p.getTeam()))
                     {
                         totalDistFactor += 400 / dist;
-                        alone = false;
                     }
                     else
                     {
                         uncontactedNation++;
                     }
+                }
+                if (alone && game().isTeamContact(getTeam(), p.getTeam()))
+                {
+                    alone = false; //if we are in contact with at least one nation, we are not alone
                 }
             }
             if (alone || game().getTurn() < 2) //haven't met anyone yet
@@ -341,7 +344,33 @@ namespace DynamicUnits
             }
             return iCount;
         }
-        
-    }
 
+        public override bool canStartImprovement(ImprovementType eImprovement, City pCity, bool bTestTech = true, bool bForceImprovement = false, bool bTestLaws = true, bool bTestEffect = true)
+        {
+             
+            bool baseResult = base.canStartImprovement(eImprovement, pCity, bTestTech, bForceImprovement, bTestLaws, bTestEffect);  
+            if (!baseResult)
+                return false;
+            if (infos().improvement(eImprovement).mbWonder && countActiveLaws() < countAllWonders() && !bTestEffect)
+            {
+                return false; //if we have not enough laws to support this wonder, we can't build it
+            }
+            return baseResult; //true
+        }
+    
+        
+        public int countAllWonders()
+        {
+            int num = 0;
+            for (ImprovementType improvementType = (ImprovementType)0; improvementType < infos().improvementsNum(); improvementType++)
+            {
+                if (infos().improvement(improvementType).mbWonder)
+                {
+                    num += getImprovementCount(improvementType);
+                }
+            }
+
+            return num;
+        }
+    }
 }

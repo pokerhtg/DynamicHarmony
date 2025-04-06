@@ -62,6 +62,20 @@ namespace DynamicUnits
         {
             return base.getLegitimacyValue(iLegitimacyChange) * (110 + offset * 5) / 100; 
         }
+        protected override long effectPlayerValue(EffectPlayerType eEffectPlayer, ReligionType eStateReligion, bool bRemove)
+        {
+            long baseValue = base.effectPlayerValue(eEffectPlayer, eStateReligion, bRemove);
+            if (!(player.isHuman()) && !game.isGameOption(infos.Globals.GAMEOPTION_PLAY_TO_WIN)) //not play to win
+            {
+                long iSubValue = infos.effectPlayer(eEffectPlayer).miVP;
+                if (iSubValue != 0)
+                {
+                    baseValue += (iSubValue * AI_VP_VALUE); //we add in the AI VP value anyway, just like the base game would for play to win situation
+                }
+            }
+           
+            return baseValue;
+        }
 
         protected override long calculateUnitValue(UnitType eUnit)
         {
@@ -75,10 +89,6 @@ namespace DynamicUnits
                 return val;
         }
 
-        protected override long citizenValue(City pCity, bool bRemove)
-        {
-            return base.citizenValue(pCity, bRemove) / 2;//DU and DW both makes citizen more of a problem; AI should value them less.
-        }
         protected override void modifyImprovementValue(ImprovementType eImprovement, Tile pTile, City pCity, ref long iValue)
         {
             base.modifyImprovementValue(eImprovement,pTile, pCity, ref iValue);
@@ -105,13 +115,13 @@ namespace DynamicUnits
         }
 
         //AI spreads itself too thin. Let's limit its preceived area of control
-        public override bool isTileReachable(Tile pToTile, Unit pUnit)
+        /**public override bool isTileReachable(Tile pToTile, Unit pUnit)
         {
             bool result = base.isTileReachable(pToTile, pUnit);
             if (result)
                 if (!pUnit.isScout() && pUnit.hasPlayer() && pUnit.player().capitalCity() != null)
                 {  //not a scout, has a capital
-                    var dstanceAllowed = pUnit.movement() * pUnit.getFatigueLimit() * (5 * player.countMilitaryUnits() + game.getTurn()) / 25 / (pUnit.AI.isBelowHealthPercent(80) ? 3 : 2);//and want to venture too far from your own land? 
+                    var dstanceAllowed = pUnit.movement() * pUnit.getFatigueLimit() * (5 * player.countMilitaryUnits() + game.getTurn()) / 30 / (pUnit.AI.isBelowHealthPercent(80) ? 3 : 2);//and want to venture too far from your own land? 
                     if (dstanceAllowed > maxDistanceALlowed)
                         maxDistanceALlowed = dstanceAllowed;
                     if (pUnit.movement() < 1 || pUnit.player().AI.getClosestCityDistance(pToTile) > maxDistanceALlowed)       //once a distance is allowed, don't ever unallow it, unless territory shrinks, then oh well.                                    
@@ -119,7 +129,7 @@ namespace DynamicUnits
                 }
             return result;
         }
-
+        **/
         protected override int calculateTargetMilitaryUnitNumber()
         {
             var target = base.calculateTargetMilitaryUnitNumber();
@@ -130,25 +140,7 @@ namespace DynamicUnits
                 target += player.countTeamWars() * 3 + countUnits(x => x?.getXP() < 50) / 2; //3 more unit per war; units with less than 50 xp count as half a unit
             return target;
         }
-            /**
-            // public virtual int getWarOfferPercent(PlayerType eOtherPlayer, bool bDeclare = true, bool bPreparedOnly = false, bool bCurrentPlayer = true
-            public override int getWarOfferPercent(PlayerType eOtherPlayer, bool bDeclare, bool bPreparedOnly = false, bool bCurrentPlayer = true)
-            {
-                int chance = base.getWarOfferPercent(eOtherPlayer, bDeclare, bPreparedOnly, bCurrentPlayer);
-
-            chance -= getDistanceFromNationBorder(game.player(eOtherPlayer).capitalCity().tile()) / 5;
-                if (!bPreparedOnly)
-                {
-                    int desire = ((DynamicUnitsPlayer)(player)).desirePeace(eOtherPlayer);
-                    if (desire< -50)
-                        chance -= desire / 20; //desire is between -200 and 0; so this increases chance by up to 10% 
-
-                    chance += player.getOrdersLeft() / 10 - player.countTeamWars()* 4; //for every 40 orders, AI wants to be in 1 war, at a rate of 1% of 10 order of exccess 
-                }
-        chance = infos.utils().range(chance, 0, 35);
-                return chance;
-            }
-            **/
-        }
+       
+    }
 
 }

@@ -101,8 +101,8 @@ namespace DynamicUnits
                 return false;
             return base.canMarchEver();
         }
+      
 
-        
         public override bool hasPush(Tile pToTile)
         {
             if ((pToTile.improvement()?.miDefenseModifier ?? 0) > 30)
