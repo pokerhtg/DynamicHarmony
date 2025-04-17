@@ -5,6 +5,7 @@ using System.IO;
 using TenCrowns.ClientCore;
 using TenCrowns.GameCore;
 using TenCrowns.GameCore.Text;
+using UnityEngine;
 using static TenCrowns.GameCore.Text.TextExtensions;
 
 namespace DynamicUnits
@@ -35,31 +36,8 @@ namespace DynamicUnits
                 }
             }
         }
-        public override int getVPToWin()
-        {
-            return base.getVPToWin() - getNumPlayersInt() * 2 + getCitySiteCount() % 5; //get city site count % 5 is a random factor to make it less predictable
-        }
-        public override int getVPToWinByVictory(VictoryType eVictory, TeamType eTeam)
-        {
-            InfoVictory infoVictory = infos().victory(eVictory);
-
-            int num = (getVPToWin() * infoVictory.miPercentVP + 50) / 100; 
-            if (infoVictory.miOpponentMaxPointPercent != 0) //Double victory; let's use half of max range instead of half of exact VP to win
-            { 
-               (num, _) = getVPRange();
-                num++;
-                num /= 2;
-                for (TeamType teamType = (TeamType)0; teamType < getNumTeams(); teamType++)
-                {
-                    if (isTeamAlive(teamType) && eTeam != teamType)                                                                                                                                                 
-                    {
-                        num = Math.Max(num, (countTeamVPs(teamType) * infoVictory.miOpponentMaxPointPercent + 50) / 100);
-                    }
-                }
-            }
-
-            return num;
-        }
+      
+        
         public override bool initFromMapScript(GameParameters pGameParams, MapBuilder pMapBuilder)
         {
 
@@ -176,22 +154,94 @@ namespace DynamicUnits
 
             return infos().diplomacy(getDiplomacy(eTeam1, eTribe1, eTeam2, eTribe2)).mbHostile;
         }
-
-
         //END BLOCK of code to allow tribes to raid
 
+        protected override int getYieldDemand(YieldType eYield)
+        {
+            if (eYield == infos().Globals.ORDERS_YIELD)
+                return base.getYieldDemand(eYield);
+            
+            int amplitude = infos().yield(eYield).miDemand; //repurpose this to be amplitude
+            float period = infos().yield(eYield).miDemandTurns; //repurpose this field to mean the period of demand
+            if (period < 1 || amplitude < 1)
+                return 0;
+
+            float elasticityOfDemand = 0.7f;  //$15 at 70, $20 at 110, $4 at 0, for an elastticity of 0.7. 
+            int shift = (int)(eYield - 11) * miMaxLatitude; //11 is magic number for Food; shift by that to get rid of food's shift. Not important, but having a food price anchor seems nice
+
+            int export = (int)((infos().yield(eYield).miPrice * Constants.YIELDS_MULTIPLIER * (1.2 + 0.012 * getTurn()) - getYieldBuyPrice(eYield)) * elasticityOfDemand);//net export from all of known OW, based on price below initial price, and elasticity of demand. World inflation is at 1% a year
+            var curve = (amplitude * Math.Sin(2 * Math.PI / period * (getTurn() + shift))); //demand sine curve
+            if (export > 30 && curve < 0)
+                curve *= -1;
+            else if (export < -30 && curve > 0)
+                curve *= -1;
+            if (curve < 0 && getTurn() < 30)
+                curve *= -0.5f; //no imports for the first 30 turns, give a little early game inflation
+            return export + (int)curve;
+        }
+        //the following code can be removed; Solver is patching vanilla
+        protected override void doTurn()
+        {
+            for (YieldType eLoopYield = 0; eLoopYield < infos().yieldsNum(); eLoopYield++)
+            {
+                int iDemand = getYieldDemand(eLoopYield);
+                if (iDemand < 0)
+                {
+                    for (int iI = 0; iI < -iDemand; iI++)
+                    {
+                        adjustYieldPrice(eLoopYield, false);
+                    }
+                }
+            }
+            base.doTurn();
+        }
+
+        public override int getVPToWin() //always return a fakish result; this is for ClientUI to decide when to add unmet players to the buildPlayerListText(StringBuilder output)
+        {
+            return getVPRange().lower;
+        }
+        public override int getVPToWinByVictory(VictoryType eVictory, TeamType eTeam)
+        {
+            InfoVictory infoVictory = infos().victory(eVictory);
+
+            int num = (getVPToWin(true) * infoVictory.miPercentVP + 50) / 100;
+            int topRange = 1000; //sufficiently large
+            if (infoVictory.miOpponentMaxPointPercent != 0) //Double victory; let's use half of min range instead of half of exact VP to win
+            {
+                (num, topRange) = getVPRange();
+                num++;
+                num /= 2;
+                for (TeamType teamType = (TeamType)0; teamType < getNumTeams(); teamType++)
+                {
+                    if (isTeamAlive(teamType) && eTeam != teamType)
+                    {
+                        num = Math.Max(num, (countTeamVPs(teamType) * infoVictory.miOpponentMaxPointPercent + 50) / 100);
+                    }
+                }
+            }
+            return Math.Min(num, topRange);
+        }
         //begin new methods
+        public int getVPToWin (bool precise)
+        {
+            (int low, int high) = getVPRange();
+            if (!precise)
+                return low;
+            else
+            {
+                var real = low + (base.getVPToWin() + miMaxLatitude/2 + miMinLatitude/3) % (high - low + 1); //a deterministic random number
+                                                                                                             //   Debug.Log("VPToWin: " + real);
+                return real;
+            }
+        }
         public (int lower, int upper) getVPRange()
         {
-            int iPointsNeeded = getVPToWin();
-            int lower = (iPointsNeeded + getCitySiteCount() % 11) * 8 / 10; // 80%, rounded up (ish)
-            lower += iPointsNeeded % 8; 
+            int iPointsNeeded = base.getVPToWin();
+            int lower = iPointsNeeded * 85 / 100; //85% of the points needed to win
             lower = lower / 5 * 5; // round down to nearest 5
-            lower = Math.Min(lower, iPointsNeeded/5*5); 
-            int upper = lower + iPointsNeeded / 5;
-            upper = (upper + getCitySiteCount() % 8) / 5 * 5; // round up (ish) to nearest 5
+            int upper = lower + iPointsNeeded / 4;
+            upper = upper / 5 * 5; // round down to nearest 5
             
-            upper = Math.Max(upper, iPointsNeeded / 5 * 5 + 5); // ensure upper is above actual P2W
             return (lower, upper);
         }
     }

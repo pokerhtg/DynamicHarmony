@@ -178,7 +178,7 @@ namespace DynamicUnits
            
             discount -= (int)Math.Pow(difficulty, 1.8); //playing on harder difficulties? research gets harder (42% on Great)
 
-            discount += 50; //standard discount is 50%, compensated in globalsxml's tech cost, to make people feel better about getting a discount most of the time
+            discount += 40; //standard discount is 40%, compensated in globalsxml's tech cost, to make people feel better about getting a discount most of the time
 
             discount = discount * (eligibleNations - uncontactedNation) / eligibleNations; //partial info displayed to players; let's limit discount let's slow down the roll to reduce confusion; uncontacted nations reduce the discount
 
@@ -242,10 +242,10 @@ namespace DynamicUnits
             }
             //end truce calc
 
-            //lower rank means stronger; each rank we ae stronger gives us 20% more confidence
-            int weight = 20;
+            //lower rank means stronger; each rank we ae stronger gives us 25% more confidence
+            int weight = 25;
             desireForPeace += weight * (calculateStrengthRank() - pOtherPlayer.calculateStrengthRank());
-            if (!game().isPlayToWinAny())
+            if (game().isPlayToWinAny())
             {
                 desireForPeace /= 2;
             }
@@ -278,24 +278,35 @@ namespace DynamicUnits
         }
         public override int calculateTotalStrength()
         {
-            int strength = base.calculateTotalStrength();
-            for (int i = 0; i < getNumUnits(); ++i)
+            int strength = 1;
+            for (int i = 0; i < getNumUnits(); i++)
             {
-                Unit pUnit = unitAt(i);
-
-                if (pUnit != null)
+                Unit unit = unitAt(i);
+               
+                if (unit != null && unit.canDamage())
                 {
-                    if (pUnit.canDamage())
-                    {
-                        strength -= 30; //in DU, having more unit isn't as inherently good as it is in base
-                        strength += pUnit.getLevel() * 10; //in DU, level is especially important because of HP boost and promotion buff
-                        strength += 5* pUnit.range() * pUnit.range(); //in DU, long ranged units often have powers beyond raw strength--eg AoE
-                    }
+                    int unitStrength = unit.modifiedAttack() + unit.modifiedDefense();
+                    unitStrength /= 2;
+                    unitStrength *= (5 + unit.getLevel()) / 5; //20% more for each level
+                    unitStrength += 2 * unit.range() * unit.range(); //in DU, long ranged units often have powers beyond raw strength--eg AoE
+                    unitStrength *= (4 + unit.movement()) / 6; //2 movement is expected; scale strength by 1/6 per movement above/below
+                    unitStrength -= 40; //in DU, having more unit isn't as inherently good as it is in base
+                    
+                    strength += Math.Max(1, unitStrength);
+                }
+            }
+            foreach (int icity in getCities())
+            {
+                City city = game().city(icity);
+                if (city != null)
+                {
+                    strength += 2 * city.strength(); //overweigh city, so the bigger AIs bully smaller nations
                 }
             }
 
-            return strength;
+            return strength;    
         }
+
         protected override void doUnitMoveQueue()
         {
             base.doUnitMoveQueue();
@@ -307,7 +318,7 @@ namespace DynamicUnits
                     Unit pUnit = unitAt(i);
                     if (pUnit != null)
                     {
-                         if (pUnit.isAlive() && pUnit.canDamage() && !pUnit.hasCooldown())
+                        if (pUnit.isAlive() && pUnit.canDamage() && !pUnit.hasCooldown())
                         {
                             Tile targetTile = pUnit.AI.getTargetTile();
                             if (pUnit.AI.canTargetTileThisTurn(targetTile, pUnit.tile()))
@@ -317,7 +328,6 @@ namespace DynamicUnits
                             else { 
                                 ((DUUnitAI) pUnit.AI).AttackFromCurrentTile(false);
                             }
-                            //Debug.Log("bonus attacked " + targetTile);
                         }
                     }
                 }

@@ -78,8 +78,8 @@ namespace DynamicUnits
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.Log("diffusion exception");
-                UnityEngine.Debug.Log(e);
+            //    UnityEngine.Debug.Log("de fusion boom");
+             //   UnityEngine.Debug.Log(e);
             }
             return output;
         }
