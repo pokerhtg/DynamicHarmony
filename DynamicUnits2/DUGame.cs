@@ -163,38 +163,29 @@ namespace DynamicUnits
             
             int amplitude = infos().yield(eYield).miDemand; //repurpose this to be amplitude
             float period = infos().yield(eYield).miDemandTurns; //repurpose this field to mean the period of demand
+            
             if (period < 1 || amplitude < 1)
                 return 0;
 
-            float elasticityOfDemand = 0.7f;  //$15 at 70, $20 at 110, $4 at 0, for an elastticity of 0.7. 
-            int shift = (int)(eYield - 11) * miMaxLatitude; //11 is magic number for Food; shift by that to get rid of food's shift. Not important, but having a food price anchor seems nice
-
-            int export = (int)((infos().yield(eYield).miPrice * Constants.YIELDS_MULTIPLIER * (1.2 + 0.012 * getTurn()) - getYieldBuyPrice(eYield)) * elasticityOfDemand);//net export from all of known OW, based on price below initial price, and elasticity of demand. World inflation is at 1% a year
+            float seed = miMaxLatitude / 100f + miMinLatitude/10f; // e.g. 3.65, definitely less than 6 and strictly less than 9.1, and bigger than 0
+            float elasticityOfDemand = 0.65f + 0.01f * seed;  //$15 at 70, $20 at 110, $4 at 0, for an elasticity of 0.7. 
+            
+            int shift = (int)(eYield - 11) * (int) seed; //11 is magic number for Food; shift by that to get rid of food's shift. Not important, but having a food price anchor seems nice
+            
+            int export = (int)((infos().yield(eYield).miPrice * Constants.YIELDS_MULTIPLIER * (1.2 + (0.01 + 0.001 * seed) * getTurn()) - getYieldBuyPrice(eYield)) * elasticityOfDemand);//net export from all of known OW, based on price below initial price, and elasticity of demand. World inflation is at 1% a year
             var curve = (amplitude * Math.Sin(2 * Math.PI / period * (getTurn() + shift))); //demand sine curve
+
             if (export > 30 && curve < 0)
                 curve *= -1;
             else if (export < -30 && curve > 0)
                 curve *= -1;
+            else if (export > -5 && export < 5) //basically no export 
+                curve *= 2; //let the curve be exciting and drive some price movement
             if (curve < 0 && getTurn() < 30)
                 curve *= -0.5f; //no imports for the first 30 turns, give a little early game inflation
             return export + (int)curve;
         }
-        //the following code can be removed; Solver is patching vanilla
-        protected override void doTurn()
-        {
-            for (YieldType eLoopYield = 0; eLoopYield < infos().yieldsNum(); eLoopYield++)
-            {
-                int iDemand = getYieldDemand(eLoopYield);
-                if (iDemand < 0)
-                {
-                    for (int iI = 0; iI < -iDemand; iI++)
-                    {
-                        adjustYieldPrice(eLoopYield, false);
-                    }
-                }
-            }
-            base.doTurn();
-        }
+     
 
         public override int getVPToWin() //always return a fakish result; this is for ClientUI to decide when to add unmet players to the buildPlayerListText(StringBuilder output)
         {

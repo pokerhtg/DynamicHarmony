@@ -23,7 +23,7 @@ namespace DynamicUnits
         protected override int AI_ORDERS_VALUE =>  base.AI_ORDERS_VALUE + 20 * offset;
         protected override int AI_MONEY_VALUE => Math.Max(5, base.AI_MONEY_VALUE  + offset + offset2 - gameTurn/15); //money worth less overtime, xml states 10
         protected override int AI_TRAINING_VALUE => base.AI_TRAINING_VALUE - offset;
-        protected override int AI_GOODS_VALUE => base.AI_MONEY_VALUE * 5 + gameTurn/5;
+        protected override int AI_GOODS_VALUE => AI_MONEY_VALUE * 4 + base.AI_MONEY_VALUE + offset;
         protected override int AI_MONEY_STOCKPILE_TURNS => base.AI_MONEY_STOCKPILE_TURNS + offset;
         protected override int AI_NUM_GOODS_TARGET => base.AI_NUM_GOODS_TARGET + 300 * offset2; //3000 from xml
         protected override int AI_UNIT_SETTLER_VALUE => Math.Max(base.AI_UNIT_SETTLER_VALUE / 3, base.AI_UNIT_SETTLER_VALUE - 10 * offset * gameTurn * gameTurn); //500,000, so it's valuing less as game ticks on
@@ -33,8 +33,8 @@ namespace DynamicUnits
         //800 from xml; each player gets an offset that lowers importance, but also gets more interested in VP as game turns tick on, and gets up to 50% more interested in VP as they close in on a VP victory
         protected override int AI_UNIT_GENERAL_VALUE => base.AI_UNIT_GENERAL_VALUE + 20 * offset;
 
-        protected override int AI_YIELD_TURNS => base.AI_YIELD_TURNS + offset  //100 is the default
-                                    - Math.Max(gameTurn / 5, (80 - 4 * vp2Win));// //AI presumes fewer turns of game left if close to winning or as game turn ticks on, whichever is bigger
+        protected override int AI_YIELD_TURNS => Math.Max(5, base.AI_YIELD_TURNS + offset  //100 is the default
+                                    - Math.Max(gameTurn / 5, (80 - 4 * vp2Win)));// //AI presumes fewer turns of game left if close to winning or as game turn ticks on, whichever is bigger
         protected override int AI_UNIT_RANDOM_PROMOTION_VALUE => base.AI_UNIT_PROMOTE_VALUE/3*2;
 
         protected override int AI_TRADE_NETWORK_VALUE_ESTIMATE => base.AI_TRADE_NETWORK_VALUE_ESTIMATE * (26 + offset) / 26;
@@ -57,7 +57,24 @@ namespace DynamicUnits
         public override long getFortValue(ImprovementType eImprovement, Tile pTile)
         {
             //defense structures aren't that important
-            return base.getFortValue(eImprovement, pTile) / 2;  
+            int adjBoost = infos.improvement(eImprovement).maiUnitDie.Count > 0? 80: -30;
+            for (DirectionType directionType = DirectionType.NW; directionType < DirectionType.NUM_TYPES; directionType++)
+            {
+                Tile tile2 = pTile.tileAdjacent(directionType);
+                if (tile2 == null)
+                {
+                    continue;
+                }
+              
+                if (tile2.hasImprovement() && infos.improvement(eImprovement).maiAdjacentImprovementModifier[tile2.getImprovement()] > 0)
+                    adjBoost += 50;
+            }
+            return base.getFortValue(eImprovement, pTile) / 2 + adjBoost;  
+        }
+        protected override long getImprovementEnableValue(ImprovementType eImprovement, bool bTestTech, bool bTestLaws, bool bTestEffect)
+        {
+            //way too much value for improvements enablement in base game. AI can't build most of the improvements enabled anyway; too many choices available
+            return base.getImprovementEnableValue(eImprovement, bTestTech, bTestLaws, bTestEffect) / 10; 
         }
         public override long getLegitimacyValue(int iLegitimacyChange)
         {
@@ -66,15 +83,19 @@ namespace DynamicUnits
         protected override long effectPlayerValue(EffectPlayerType eEffectPlayer, ReligionType eStateReligion, bool bRemove)
         {
             long baseValue = base.effectPlayerValue(eEffectPlayer, eStateReligion, bRemove);
-            if (!(player.isHuman()) && !game.isGameOption(infos.Globals.GAMEOPTION_PLAY_TO_WIN)) //not play to win
+            if (!player.isHuman() && !game.isGameOption(infos.Globals.GAMEOPTION_PLAY_TO_WIN)) //not play to win
             {
-                long iSubValue = infos.effectPlayer(eEffectPlayer).miVP;
+                int iSubValue = infos.effectPlayer(eEffectPlayer).miVP;
                 if (iSubValue != 0)
                 {
                     baseValue += (iSubValue * AI_VP_VALUE); //we add in the AI VP value anyway, just like the base game would for play to win situation
                 }
             }
-           
+            foreach (YieldType eLoopYield in infos.effectPlayer(eEffectPlayer).maeBuyTile)
+            {
+                baseValue -= 99 * AI_TILE_VALUE * (getCities().Count + 10); // undoing 99% of base game's crazy evaluation of tile buying powers. this is assuming (true as of 4/20/25) base game has the same code, except positive 100 as multiplier
+            }
+
             return baseValue;
         }
 

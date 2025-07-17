@@ -213,16 +213,20 @@ namespace DynamicUnits
                 }
             }
             if (!promoted)
-                doXP(xp, azTileTexts);
+                doCombatXP(xp, azTileTexts);
 
             return base.attackTile(pFromTile, pToTile, bTargetTile, iAttackPercent, pActingPlayer, azTileTexts, out eOutcome, ref bEvent);
 
             void DUXP()
             {
                 xp = -infos().Globals.COMBAT_BASE_XP;
-                if (canDamageCity(pToTile))
-                    xp += infos().Globals.BASE_DAMAGE + attackCityDamage(pFromTile, pToTile.city(), bCritical: false, iAttackPercent);
                 pDefendingUnit = pToTile.defendingUnit();
+                if (canDamageCity(pToTile))
+                {
+                    xp += infos().Globals.BASE_DAMAGE + attackCityDamage(pFromTile, pToTile.city(), bCritical: false, iAttackPercent);
+                    return;
+                }
+                
                 if (pDefendingUnit != null && canDamageUnit(pDefendingUnit))
                 {
                     int estimate = attackUnitDamage(pFromTile, pDefendingUnit, false, iAttackPercent); //no crit, but also unlimited by actual remaining HP
@@ -269,13 +273,13 @@ namespace DynamicUnits
             return valid;
         }
 
-        protected override void doXP(int multiplier, List<TileText> azTileTexts)
+        protected override void doCombatXP(int multiplier, List<TileText> azTileTexts)
        {
             if (multiplier <= infos().Globals.BASE_DAMAGE / 2) //ignore tiny xp gains; reduce text notification noises. Also means base game attack xp gains are ignored
                 return;
          
             else 
-               base.doXP(multiplier, azTileTexts);
+               base.doCombatXP(multiplier, azTileTexts);
        }
        
       public override int attackUnitDamage(Tile pFromTile, Unit pToUnit, bool bCritical, int iPercent = 100, int iExistingDamage = -1, bool bCheckOurUnits = true, int iExtraModifier = 0)

@@ -1,5 +1,6 @@
 ﻿using Mohawk.SystemCore;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using TenCrowns.GameCore;
 
@@ -30,13 +31,7 @@ namespace DynamicUnits
             return baseResult;
 
         }
-     
-        public override int getEffectCityYieldRate(EffectCityType eEffectCity, YieldType eYield, Character pGovernor, bool bComplete = false)
-        {
-            if (eYield == YieldType.NONE)
-                return 0;
-            else return base.getEffectCityYieldRate(eEffectCity, eYield, pGovernor, bComplete); // fallback to the base implementation for other yields.
-        }
+
         public bool isNegativeYieldforProject(ProjectType eProject)
         {
             // check if the project has a negative yield for the city.

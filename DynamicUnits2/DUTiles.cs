@@ -62,12 +62,14 @@ namespace DynamicUnits
         {
             return base.isWaterTradeEdge(eTeam, eEdge) && height().miMovementCost < 12;
         }
-        // public virtual bool canHaveImprovement(ImprovementType eImprovement, TeamType eTeamTerritory = TeamType.NONE, bool bTestTerritory = true, bool bTestEnabled = true, bool bTestAdjacent = true, bool bTestReligion = true, bool bUpgradeImprovement = false, bool bForceImprovement = false)
-        public override bool canHaveImprovement(ImprovementType eImprovement, City pCity = null, TeamType eTeamTerritory = TeamType.NONE, bool bTestTerritory = true, bool bTestEnabled = true, bool bTestAdjacent = true, bool bTestReligion = true, bool bUpgradeImprovement = false, bool bForceImprovement = false)
+        // public virtual bool canHaveImprovement(ImprovementType eImprovement, City pCity = null, TeamType eTeamTerritory = TeamType.NONE, bool bTestTerritory = true, bool bTestEnabled = true, bool bTestAdjacent = true, bool bTestReligion = true, bool bTestResource = true, bool bUpgradeImprovement = false, bool bForceImprovement = false)
+        
+        public override bool canHaveImprovement(ImprovementType eImprovement, City pCity = null, TeamType eTeamTerritory = TeamType.NONE, bool bTestTerritory = true, bool bTestEnabled = true, bool bTestAdjacent = true, bool bTestReligion = true, bool bTestResource = true, bool bUpgradeImprovement = false, bool bForceImprovement = false)
         {
             if (semipassable())
                 return false;
-            return base.canHaveImprovement(eImprovement, pCity, eTeamTerritory, bTestTerritory, bTestEnabled, bTestAdjacent, bTestReligion, bUpgradeImprovement, bForceImprovement);
+            return base.canHaveImprovement(eImprovement, pCity, eTeamTerritory, bTestTerritory, bTestEnabled, bTestAdjacent, bTestReligion, bTestResource, bUpgradeImprovement, bForceImprovement);
+           // return base.canHaveImprovement(eImprovement, pCity, eTeamTerritory, bTestTerritory, bTestEnabled, bTestAdjacent, bTestReligion, bUpgradeImprovement, bForceImprovement);
         }
         public bool semipassable()
         {

@@ -703,10 +703,10 @@ namespace dynamicHarmony
                 __result = Math.Max(0, __result); //negative should be handled same as zero...but just in case. zero means not a valid target (which is a stronger rejection than base method's floor of 1).
             }
 
-            [HarmonyPatch(typeof(Unit.UnitAI), nameof(Unit.UnitAI.getAttackTiles), new Type[] {typeof(Tile), typeof(bool), typeof(List<int>) })]
-            // public virtual void getAttackTiles(PathFinder pPathfinder, Tile pTargetTile, bool bTestUnits, List<int> aiAttackTiles)
+            [HarmonyPatch(typeof(Unit.UnitAI), nameof(Unit.UnitAI.getAttackTiles), new Type[] {typeof(Tile), typeof(bool), typeof(bool), typeof(List<int>) })]
+            // public virtual void getAttackTiles(Tile pTargetTile, bool bTestTheirUnits, bool bTestOurUnits, List<int> aiAttackTiles)
             ///charge AI--did you know, melee can attack range 2?
-            static bool Prefix(ref Unit ___unit, Tile pTargetTile, bool bTestUnits, List<int> aiAttackTiles)
+            static bool Prefix(ref Unit ___unit, Tile pTargetTile, bool bTestTheirUnits, bool bTestOurUnits, List<int> aiAttackTiles)
             {
                 bool passToOriginal = true;
                 if (PatchUnitBehaviors.tryCharge(___unit, out _, null, null))
@@ -725,7 +725,7 @@ namespace dynamicHarmony
                                 if (___unit.canTargetTile(pMoveTile, pTargetTile)) //this calls and checks tryCharge for a more specific to/from combo
                                 {
                                     ++iNumValidTilesAtRange;
-                                    if (___unit.canOccupyTile(pMoveTile, ___unit.getTeam(), bTestUnits, bTestUnits, false))
+                                    if (___unit.canOccupyTile(pMoveTile, ___unit.getTeam(), bTestTheirUnits, bTestOurUnits, false))
                                     {
                                         if (___unit.isTribe())
                                         {
