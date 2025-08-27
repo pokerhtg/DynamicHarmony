@@ -52,6 +52,7 @@ namespace DynamicUnits
                                 eLinkColor = pGame.infos().Globals.COLOR_AVERAGE;
                             }
                         }
+
                         TextVariable vpVariable = buildLinkTextVariable(buildSlashText(TEXTVAR(pGame.countTeamVPs(eTeam).ToStringCached().PadLeft(maxLength)), TEXTVAR(lower+"-"+upper)), ItemType.HELP_LINK, nameof(LinkType.HELP_VICTORY), ((int)eTeam).ToStringCached(), false.ToStringCached(), eLinkColor: eLinkColor);
                         return vpVariable;
                     }
@@ -98,6 +99,10 @@ namespace DynamicUnits
         {
             builder = base.buildProjectHelp(builder, eProject, pCity, pGame, pPlayer, pActivePlayer, bName, bTechPrereq, bCosts, bDetails, bEncyclopedia, scopeType);
             // add custom help text for projects
+            if (!bTechPrereq || !bCosts)
+            {
+                return builder; // if we are not showing tech prereq or costs, we don't need to add anything.
+            }
             if (pCity != null && (infos().project(eProject).meProductionType != YieldType.NONE) && !infos().project(eProject).mbHidden)
             {
                 

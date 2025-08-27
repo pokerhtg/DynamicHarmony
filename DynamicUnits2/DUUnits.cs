@@ -243,7 +243,7 @@ namespace DynamicUnits
                         else
                         {
                             xp *= 150;
-                            xp /= 100;
+                            xp /= 200;
                         }
                     }
                 }

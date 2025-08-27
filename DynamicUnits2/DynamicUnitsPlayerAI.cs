@@ -27,7 +27,6 @@ namespace DynamicUnits
         protected override int AI_MONEY_STOCKPILE_TURNS => base.AI_MONEY_STOCKPILE_TURNS + offset;
         protected override int AI_NUM_GOODS_TARGET => base.AI_NUM_GOODS_TARGET + 300 * offset2; //3000 from xml
         protected override int AI_UNIT_SETTLER_VALUE => Math.Max(base.AI_UNIT_SETTLER_VALUE / 3, base.AI_UNIT_SETTLER_VALUE - 10 * offset * gameTurn * gameTurn); //500,000, so it's valuing less as game ticks on
-        protected override int AI_NO_WONDER_TURNS => base.AI_NO_WONDER_TURNS - 2 * offset2;
         protected override int AI_SCIENCE_VALUE => base.AI_SCIENCE_VALUE - gameTurn > 50? gameTurn/2 : 0; //300 from xml. After 50 turns, gradually reduce science value
         protected override int AI_VP_VALUE => (base.AI_VP_VALUE - 20 * (5 + offset) + gameTurn * (gameTurn - 9) / 20) * (vp2Win < 25 ? (400 - 12 * vp2Win): 100) /100; 
         //800 from xml; each player gets an offset that lowers importance, but also gets more interested in VP as game turns tick on, and gets up to 50% more interested in VP as they close in on a VP victory

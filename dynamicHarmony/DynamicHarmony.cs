@@ -775,19 +775,19 @@ namespace dynamicHarmony
                     ___retreatValueDelegate = new Func<Tile, long>(__instance.retreatTileValue);
 
                 if (PatchUnitBehaviors.getSpecialMove(___unit.getEffectUnits(), ___game.infos(), out _) == isKite && !___unit.isFatigued() && attackedThisTurn(___unit))
-                    doMoveToBestTile(__instance, pPathfinder, ___unit.getStepsToFatigue(), null, ___retreatValueDelegate);
+                    doMoveToBestTile(__instance, pPathfinder, ___unit.getStepsToFatigue(), true, null, ___retreatValueDelegate);
             }
 
             [HarmonyReversePatch]
             [HarmonyPatch("doMoveToBestTile")]
-            //doMoveToBestTile(PathFinder pPathfinder, int iMaxSteps, Predicate<Tile> tileValid, Func<Tile, long> tileValue)
-            public static bool doMoveToBestTile(Unit.UnitAI ai, PathFinder pPathfinder, int iMaxSteps, Predicate<Tile> tileValid, Func<Tile, long> tileValue)
+            //doMoveToBestTile(PathFinder pPathfinder, int iMaxSteps, bool bSingle, Predicate<Tile> tileValid, Func<Tile, long> tileValue)
+            public static bool doMoveToBestTile(Unit.UnitAI ai, PathFinder pPathfinder, int iMaxSteps, bool bSingle, Predicate<Tile> tileValid, Func<Tile, long> tileValue)
             {
                 throw new NotImplementedException("It's a stub");
             }
             [HarmonyReversePatch]
             [HarmonyPatch("doAttackFromCurrentTile")]
-            public static bool doAttackFromCurrentTile(Unit.UnitAI ai, bool bKillOnly)
+            public static bool doAttackFromCurrentTile(Unit.UnitAI ai, bool bKillOnly, bool bNoCity = false)
             {
                 throw new NotImplementedException("It's a stub");
             }

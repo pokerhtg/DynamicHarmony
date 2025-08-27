@@ -12,7 +12,7 @@ namespace DynamicUnits
 		//just to wrap and expose the private method
 		public void AttackFromCurrentTile(bool bKillOnly)
 		{ 
-			base.doAttackFromCurrentTile(bKillOnly);
+			base.doAttackFromCurrentTile(bKillOnly, false);
 		}
 		public override bool shouldTribePillage(Tile pTile)
 		{
