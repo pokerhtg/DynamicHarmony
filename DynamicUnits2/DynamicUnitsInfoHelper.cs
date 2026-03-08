@@ -34,12 +34,7 @@ namespace DynamicUnits
                 return -mInfos.utils().triangle(iLevel + 1) * mInfos.yield(eYield).miNegativeHappinessModifier;
             else return 0; //level 0 and -1 yields nothing
         }
-        public override bool canStack(UnitType eUnit)
-        {
-            if (mInfos.unit(eUnit).miMovement < 1)
-                return true;
-            return base.canStack(eUnit);
-        }
+
         public override int turnsLeft(int iThresholdWhole, int iProgress, int iRate)
         {
             if (iRate > 0)

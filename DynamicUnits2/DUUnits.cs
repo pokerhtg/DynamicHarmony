@@ -101,15 +101,20 @@ namespace DynamicUnits
                 return false;
             return base.canMarchEver();
         }
-      
 
-        public override bool hasPush(Tile pToTile)
+        public override bool isOccurrenceImpassableImmune()
         {
+            return base.isOccurrenceImpassableImmune() || movement() < 0; //units can't move won't bounce even if an impassable occurrence is there
+        }
+
+        public override bool hasPush(Unit pToUnit)
+        {
+            var pToTile = pToUnit.tile();
             if ((pToTile.improvement()?.miDefenseModifier ?? 0) > 30)
                 return false;
             if ((pToTile.defendingUnit()?.movement() ?? 0) < 0)
                 return false;
-            return base.hasPush(pToTile);
+            return base.hasPush(pToUnit);
         }
        
         public override int getHPMax()
@@ -147,7 +152,7 @@ namespace DynamicUnits
         /// <param name="eOutcome"></param>
         /// <param name="bEvent"></param>
         /// <returns></returns>
-        protected override int attackTile(Tile pFromTile, Tile pToTile, bool bTargetTile, int iAttackPercent, Player pActingPlayer, List<TileText> azTileTexts, out AttackOutcome eOutcome, ref bool bEvent)
+        protected override int attackTile(Tile pFromTile, Tile pToTile, bool bTargetTile, int iAttackPercent, Player pActingPlayer, List<TileText> azTileTexts, List<Attack> apDefendingUnitOutcomes)
         {
             int xp;
             Unit pDefendingUnit;
@@ -215,7 +220,7 @@ namespace DynamicUnits
             if (!promoted)
                 doCombatXP(xp, azTileTexts);
 
-            return base.attackTile(pFromTile, pToTile, bTargetTile, iAttackPercent, pActingPlayer, azTileTexts, out eOutcome, ref bEvent);
+            return base.attackTile(pFromTile, pToTile, bTargetTile, iAttackPercent, pActingPlayer, azTileTexts, apDefendingUnitOutcomes);
 
             void DUXP()
             {

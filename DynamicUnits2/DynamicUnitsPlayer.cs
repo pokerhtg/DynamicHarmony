@@ -258,8 +258,8 @@ namespace DynamicUnits
 
             desireForPeace += 100 * weight * (theirPower - ourPower) / (DAMPER + ourPower) / 100;
 
-            var ourTech = getTotalTechProgress();
-            var theirTech = pOtherPlayer.getTotalTechProgress();
+            var ourTech = getYieldTotal(infos().Globals.SCIENCE_YIELD);
+            var theirTech = pOtherPlayer.getYieldTotal(infos().Globals.SCIENCE_YIELD);
             desireForPeace -= 100 * weight * (theirTech - ourTech) / (DAMPER + ourTech) / 100;
 
             if (other == mePlayer)
@@ -354,11 +354,10 @@ namespace DynamicUnits
             }
             return iCount;
         }
-
-        public override bool canStartImprovement(ImprovementType eImprovement, City pCity, bool bTestTech = true, bool bForceImprovement = false, bool bTestLaws = true, bool bTestEffect = true)
+        public override bool canStartImprovement(ImprovementType eImprovement, City pCity, bool bTestTech = true, bool bForceImprovement = false, bool bTestLaws = true, bool bTestEffect = true, bool bTestTerritory = true)
         {
              
-            bool baseResult = base.canStartImprovement(eImprovement, pCity, bTestTech, bForceImprovement, bTestLaws, bTestEffect);  
+            bool baseResult = base.canStartImprovement(eImprovement, pCity, bTestTech, bForceImprovement, bTestLaws, bTestEffect, bTestTerritory);  
             if (!baseResult)
                 return false;
             if (infos().improvement(eImprovement).mbWonder && countActiveLaws() < countAllWonders() && !bTestEffect)

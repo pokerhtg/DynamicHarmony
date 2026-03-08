@@ -70,10 +70,10 @@ namespace DynamicUnits
             }
             return base.getFortValue(eImprovement, pTile) / 2 + adjBoost;  
         }
-        protected override long getImprovementEnableValue(ImprovementType eImprovement, bool bTestTech, bool bTestLaws, bool bTestEffect)
+        protected override long getImprovementEnableValue(ImprovementType eImprovement, bool bTestTech, bool bTestLaws, bool bTestEffect, bool bTestCulture, bool bTestPrereqImprovement)
         {
             //way too much value for improvements enablement in base game. AI can't build most of the improvements enabled anyway; too many choices available
-            return base.getImprovementEnableValue(eImprovement, bTestTech, bTestLaws, bTestEffect) / 10; 
+            return base.getImprovementEnableValue(eImprovement, bTestTech, bTestLaws, bTestEffect, bTestCulture, bTestPrereqImprovement) / 10; 
         }
         public override long getLegitimacyValue(int iLegitimacyChange)
         {
